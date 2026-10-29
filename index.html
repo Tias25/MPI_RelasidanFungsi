@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MPI - Relasi dan Fungsi</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Custom Configuration & Styles -->
+    <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        kemenag: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d', // Emerald / Islamic Green
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        arabic: ['Amiri', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Styles & Utilities */
+        body { 
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); 
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(22, 163, 74, 0.15);
+        }
+        .glass-dark {
+            background: rgba(20, 83, 45, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .hide { display: none !important; }
+        
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        }
+        .btn-glow { animation: pulse-glow 2s infinite; }
+
+        @keyframes marquee {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 25s linear infinite;
+            will-change: transform;
+        }
+
+        /* Typography */
+        .text-arabic {
+            font-family: 'Amiri', serif;
+            direction: rtl;
+            font-size: 1.75rem;
+            line-height: 2.5rem;
+        }
+        
+        /* Interactive Elements */
+        .match-btn.selected { background-color: #fef08a; border-color: #ca8a04; }
+        .match-btn.matched { background-color: #bbf7d0; border-color: #16a34a; pointer-events: none; opacity: 0.7; }
+        
+        /* Print Styles */
+        @media print {
+            body { background: white; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+        .print-only { display: none; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #16a34a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #15803d; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased h-screen w-screen overflow-hidden flex items-center justify-center relative">
+
+    <!-- Backsound Audio & Floating Audio Toggle Button -->
+    <audio id="bgm-audio" src="https://upload.wikimedia.org/wikipedia/commons/5/52/Twinkle_Twinkle_Little_Star.ogg" loop preload="auto"></audio>
+    <button id="btn-music" onclick="toggleMusic()" class="fixed top-4 right-4 md:bottom-6 md:right-6 md:top-auto z-[150] w-12 h-12 bg-gray-400 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-gold-500 transition-colors duration-300 animate-bounce">
+        <i class="fas fa-volume-mute"></i>
+    </button>
+
+    <!-- Global Modal Overlay (Replaces alerts) -->
+    <div id="global-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm hide">
+        <div class="glass w-11/12 max-w-md p-6 rounded-2xl animate-fade-in text-center relative">
+            <div id="modal-icon" class="text-4xl mb-4"></div>
+            <h3 id="modal-title" class="text-xl font-bold text-kemenag-800 mb-2"></h3>
+            <p id="modal-desc" class="text-gray-600 mb-6 text-sm"></p>
+            <button onclick="hideModal()" class="w-full py-3 bg-kemenag-600 text-white rounded-xl font-bold hover:bg-kemenag-700 transition-colors shadow-lg active:scale-95" id="modal-btn">Tutup / Mengerti</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <main id="app-container" class="w-full max-w-7xl h-full md:h-[95vh] bg-white/40 md:rounded-3xl md:shadow-2xl overflow-hidden relative border border-white/50">
+        
+        <!-- ========================================== -->
+        <!-- 1. SPLASH SCREEN                           -->
+        <!-- ========================================== -->
+        <section id="screen-splash" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-kemenag-800 text-white transition-opacity duration-500">
+            <div class="animate-float flex flex-col items-center">
+                <!-- SVG Icon Math/Function -->
+                <svg class="w-32 h-32 mb-6 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4M12 12h.01"></path>
+                </svg>
+                <h1 class="text-3xl md:text-5xl font-extrabold tracking-wider text-center">Relasi & Fungsi</h1>
+                <p class="mt-4 text-kemenag-100 tracking-widest text-sm uppercase">Media Pembelajaran Interaktif</p>
+                <div class="w-48 h-1 bg-white/20 mt-8 rounded-full overflow-hidden">
+                    <div class="h-full bg-gold-400 animate-pulse w-full"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 2. COVER PAGE (With Floating Slides)       -->
+        <!-- ========================================== -->
+        <section id="screen-cover" class="absolute inset-0 w-full h-full bg-cover bg-center flex flex-col items-center justify-center p-6 hide overflow-y-auto" style="background-image: url('data:image/svg+xml,%3Csvg width=\'100%25\' height=\'100%25\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cdefs%3E%3Cpattern id=\'grid\' width=\'40\' height=\'40\' patternUnits=\'userSpaceOnUse\'%3E%3Cpath d=\'M 40 0 L 0 0 0 40\' fill=\'none\' stroke=\'rgba(34, 197, 94, 0.1)\' stroke-width=\'1\'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width=\'100%25\' height=\'100%25\' fill=\'url(%23grid)\' /%3E%3C/svg%3E');">
+            
+            <div class="glass p-8 md:p-12 rounded-3xl max-w-2xl w-full text-center relative z-10 animate-fade-in shadow-2xl border-t border-l border-white">
+                <div class="inline-block px-4 py-1 rounded-full bg-kemenag-100 text-kemenag-700 font-bold text-xs mb-4 border border-kemenag-200">
+                    <i class="fas fa-book-open mr-2"></i>Matematika - MTs Kelas VIII
+                </div>
+                
+                <h1 class="text-3xl md:text-5xl font-black text-kemenag-900 mb-2 leading-tight">Relasi dan Fungsi<br><span class="text-gold-500 text-2xl md:text-4xl">serta Penyajiannya</span></h1>
+                <p class="text-gray-600 mb-8 font-medium">Belajar asyik, bernilai Islami, dan berbasis potensi alam Pohuwato.</p>
+                
+                <!-- SVG Visual Interaktif Cover -->
+                <div class="flex justify-center mb-8">
+                    <svg class="w-48 h-48 animate-float" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="100" r="40" fill="#dcfce7" stroke="#16a34a" stroke-width="4"/>
+                        <circle cx="150" cy="100" r="40" fill="#fef3c7" stroke="#ca8a04" stroke-width="4"/>
+                        <path d="M 90 90 Q 100 70 110 90" fill="none" stroke="#16a34a" stroke-width="3" stroke-dasharray="5,5" class="animate-pulse"/>
+                        <path d="M 90 110 Q 100 130 110 110" fill="none" stroke="#ca8a04" stroke-width="3" marker-end="url(#arrow)"/>
+                        <circle cx="50" cy="85" r="5" fill="#15803d"/>
+                        <circle cx="50" cy="115" r="5" fill="#15803d"/>
+                        <circle cx="150" cy="100" r="5" fill="#b45309"/>
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ca8a04"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+
+                <div class="flex flex-col space-y-4 md:space-y-0 md:flex-row md:space-x-4 justify-center">
+                    <button onclick="showOverlay('overlay-dev')" class="px-6 py-3 bg-white text-kemenag-700 rounded-xl font-bold hover:bg-gray-50 transition shadow border border-gray-200">
+                        <i class="fas fa-user-tie mr-2"></i> Info Pengembang
+                    </button>
+                    <button onclick="showOverlay('overlay-tujuan')" class="px-6 py-3 bg-white text-kemenag-700 rounded-xl font-bold hover:bg-gray-50 transition shadow border border-gray-200">
+                        <i class="fas fa-bullseye mr-2"></i> Tujuan Belajar
+                    </button>
+                    <button onclick="autoStartMusic(); nav('screen-cover', 'screen-login')" class="px-8 py-3 bg-kemenag-600 text-white rounded-xl font-bold hover:bg-kemenag-700 transition shadow-lg btn-glow text-lg">
+                        MULAI <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Animasi Teks Berjalan (Marquee) -->
+            <div class="absolute bottom-0 left-0 w-full bg-kemenag-900 text-white py-3 overflow-hidden z-20 border-t-2 border-gold-500">
+                <div class="animate-marquee font-semibold tracking-wide text-sm md:text-base">
+                    🎓 <span class="text-gold-400">Mata Pelajaran:</span> MATEMATIKA (Relasi dan Fungsi) &nbsp;&nbsp;✦&nbsp;&nbsp; 
+                    👩‍🏫 <span class="text-gold-400">Pengembang:</span> Dyah Hayuningtias Makalalag, S.Pd (MTs Negeri 1 Pohuwato) &nbsp;&nbsp;✦&nbsp;&nbsp; 
+                    🎯 <span class="text-gold-400">Tujuan:</span> Murid dapat memahami relasi dan fungsi, serta menyajikannya dalam diagram panah, tabel, himpunan pasangan berurutan, dan grafik.
+                </div>
+            </div>
+
+            <!-- Floating Slide: Info Pengembang -->
+            <div id="overlay-dev" class="fixed inset-0 z-40 bg-black/50 backdrop-blur-md flex items-center justify-center hide opacity-0 transition-opacity duration-300">
+                <div class="glass w-11/12 max-w-sm rounded-3xl p-8 text-center relative transform scale-95 transition-transform duration-300" id="overlay-dev-card">
+                    <div class="w-32 h-32 mx-auto rounded-full border-4 border-gold-400 p-1 mb-4 shadow-lg overflow-hidden relative bg-gray-200">
+                        <!-- Fallback Initials -->
+                        <div class="absolute inset-0 flex items-center justify-center text-4xl font-bold text-gray-400">DM</div>
+                        <!-- Actual Image -->
+                        <img src="https://freeimage.host/i/n85AEZv" onerror="this.style.display='none'" alt="Dyah Hayuningtias Makalalag" class="w-full h-full object-cover rounded-full relative z-10">
+                    </div>
+                    <h2 class="text-2xl font-black text-kemenag-900 mb-1">Dyah Hayuningtias Makalalag, S.Pd</h2>
+                    <p class="text-kemenag-600 font-semibold mb-1"><i class="fas fa-school mr-2"></i>MTs Negeri 1 Pohuwato</p>
+                    <p class="text-gray-500 text-sm mb-6"><i class="fas fa-envelope mr-2"></i>rayarania1617@gmail.com</p>
+                    <button onclick="hideOverlay('overlay-dev')" class="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">Kembali ke Cover</button>
+                </div>
+            </div>
+
+            <!-- Floating Slide: Tujuan & Nilai KBC -->
+            <div id="overlay-tujuan" class="fixed inset-0 z-40 bg-black/50 backdrop-blur-md flex items-center justify-center hide opacity-0 transition-opacity duration-300">
+                <div class="glass w-11/12 max-w-lg rounded-3xl p-6 md:p-8 relative transform scale-95 transition-transform duration-300" id="overlay-tujuan-card">
+                    <h2 class="text-2xl font-black text-kemenag-900 mb-4 border-b-2 border-kemenag-100 pb-2"><i class="fas fa-bullseye text-gold-500 mr-2"></i> Tujuan Pembelajaran</h2>
+                    <p class="text-gray-700 mb-4 text-justify">Murid dapat memahami konsep relasi dan fungsi (menentukan domain, kodomain, dan range), serta menyajikannya dalam bentuk diagram panah, tabel, himpunan pasangan berurutan, dan grafik.</p>
+                    
+                    <div class="bg-kemenag-50 p-4 rounded-xl mb-4 border border-kemenag-100 text-center">
+                        <p class="text-arabic text-kemenag-800 mb-2">إِنَّا كُلَّ شَيْءٍ خَلَقْنَاهُ بِقَدَرٍ</p>
+                        <p class="text-xs text-gray-600 italic">"Sungguh, Kami menciptakan segala sesuatu menurut ukuran." (QS. Al-Qamar: 49)</p>
+                    </div>
+
+                    <div class="text-sm text-gray-600 mb-6 text-justify">
+                        <strong class="text-kemenag-700">Kurikulum Berbasis Cinta (KBC):</strong> Media ini disusun untuk menanamkan rasa cinta kepada Sang Pencipta melalui keteraturan matematika, peduli lingkungan hidup sekitar area pertambangan dan perkebunan di Kecamatan Paguta, Pohuwato, serta menebar moderasi beragama dan cinta tanah air.
+                    </div>
+
+                    <button onclick="hideOverlay('overlay-tujuan')" class="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">Kembali ke Cover</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 3. FORM IDENTITAS SISWA                    -->
+        <!-- ========================================== -->
+        <section id="screen-login" class="absolute inset-0 w-full h-full bg-white flex flex-col items-center justify-center p-6 hide">
+            <div class="glass w-full max-w-md p-8 rounded-3xl shadow-xl animate-fade-in border border-gray-100">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-kemenag-100 text-kemenag-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user-graduate text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">Isi Data Diri</h2>
+                    <p class="text-gray-500 text-sm">Sebelum mulai, tuliskan namamu ya!</p>
+                </div>
+                
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nama Lengkap</label>
+                        <input type="text" id="input-nama" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-kemenag-500 focus:border-kemenag-500 outline-none transition bg-white/50" placeholder="Contoh: Ahmad Budi">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Kelas</label>
+                        <select id="input-kelas" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-kemenag-500 focus:border-kemenag-500 outline-none transition bg-white/50">
+                            <option value="">Pilih Kelas</option>
+                            <option value="VIII-A">Kelas VIII-A</option>
+                            <option value="VIII-B">Kelas VIII-B</option>
+                            <option value="VIII-C">Kelas VIII-C</option>
+                            <option value="VIII-D">Kelas VIII-D</option>
+                        </select>
+                    </div>
+                    <button onclick="submitLogin()" class="w-full py-4 bg-kemenag-600 text-white rounded-xl font-bold hover:bg-kemenag-700 transition shadow-md mt-4">
+                        Lanjut ke Panduan <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                    <button onclick="nav('screen-login', 'screen-cover')" class="w-full py-2 text-gray-500 text-sm hover:text-gray-800 transition">Kembali</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 4. PANDUAN PENGGUNA (SLIDES)               -->
+        <!-- ========================================== -->
+        <section id="screen-guide" class="absolute inset-0 w-full h-full bg-white flex flex-col hide">
+            <div class="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+                <div class="max-w-2xl w-full">
+                    <h2 class="text-3xl font-bold text-center text-kemenag-800 mb-8">Ahlan Wa Sahlan, <span id="display-name" class="text-gold-500">Siswa</span>!</h2>
+                    
+                    <!-- Guide Carousel container -->
+                    <div class="relative bg-kemenag-50 rounded-2xl p-6 md:p-10 shadow-inner border border-kemenag-100 h-64 flex flex-col justify-center text-center">
+                        
+                        <div id="guide-slide-1" class="guide-slide animate-fade-in">
+                            <i class="fas fa-lock-open text-4xl text-kemenag-500 mb-4"></i>
+                            <h3 class="text-xl font-bold mb-2">Sistem Belajar Berjenjang</h3>
+                            <p class="text-gray-600">Aplikasi ini memiliki 3 menu utama: Belajar, Bermain, dan Berlatih. Selesaikan satu menu untuk membuka kunci menu berikutnya secara bertahap.</p>
+                        </div>
+                        
+                        <div id="guide-slide-2" class="guide-slide hide animate-fade-in">
+                            <i class="fas fa-leaf text-4xl text-kemenag-500 mb-4"></i>
+                            <h3 class="text-xl font-bold mb-2">Nilai-Nilai Kebaikan</h3>
+                            <p class="text-gray-600">Perhatikan setiap cerita kasus. Kamu akan menemukan hikmah dari Al-Qur'an dan nilai cinta lingkungan terkait daerah kita, Pohuwato.</p>
+                        </div>
+
+                        <div id="guide-slide-3" class="guide-slide hide animate-fade-in">
+                            <i class="fas fa-award text-4xl text-kemenag-500 mb-4"></i>
+                            <h3 class="text-xl font-bold mb-2">Laporan Akhir</h3>
+                            <p class="text-gray-600">Di akhir sesi Berlatih, kamu akan mendapatkan Laporan Hasil Belajar PDF otomatis yang bisa kamu unduh dan laporkan ke gurumu. Lakukan yang terbaik!</p>
+                        </div>
+
+                    </div>
+
+                    <!-- Guide Controls -->
+                    <div class="flex justify-between items-center mt-8">
+                        <button id="btn-guide-prev" onclick="changeGuide(-1)" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 invisible">Sebelumnya</button>
+                        <div class="flex space-x-2">
+                            <div id="dot-1" class="w-3 h-3 rounded-full bg-kemenag-600"></div>
+                            <div id="dot-2" class="w-3 h-3 rounded-full bg-gray-300"></div>
+                            <div id="dot-3" class="w-3 h-3 rounded-full bg-gray-300"></div>
+                        </div>
+                        <button id="btn-guide-next" onclick="changeGuide(1)" class="px-6 py-2 bg-kemenag-600 text-white rounded-lg font-semibold hover:bg-kemenag-700 shadow">Selanjutnya</button>
+                        <button id="btn-guide-finish" onclick="finishGuide()" class="px-6 py-2 bg-gold-500 text-white rounded-lg font-bold hover:bg-gold-600 shadow hide btn-glow">Masuk Menu Utama</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 5. DASHBOARD UTAMA (MENU TERKUNCI)         -->
+        <!-- ========================================== -->
+        <section id="screen-dashboard" class="absolute inset-0 w-full h-full bg-gray-50 flex flex-col hide">
+            <!-- Header -->
+            <header class="bg-kemenag-800 text-white p-6 shadow-md shrink-0 rounded-b-3xl">
+                <div class="max-w-4xl mx-auto flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-kemenag-200">Peserta Didik:</p>
+                        <h2 class="text-xl font-bold truncate max-w-[200px] md:max-w-md" id="dash-name">Nama</h2>
+                        <p class="text-xs text-gold-400 mt-1" id="dash-class">Kelas</p>
+                    </div>
+                    <div class="text-right">
+                        <i class="fas fa-mosque text-3xl opacity-50"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Cards -->
+            <div class="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-start gap-6 max-w-5xl mx-auto w-full pb-20 md:pb-6 pt-6">
+                
+                <div class="flex flex-col md:flex-row items-stretch justify-center gap-6 w-full">
+                    <!-- Menu 1: Belajar -->
+                    <div onclick="startBelajar()" class="w-full md:w-1/3 glass p-6 rounded-3xl cursor-pointer hover:-translate-y-2 transition duration-300 group border-b-4 border-kemenag-500">
+                        <div class="w-16 h-16 bg-kemenag-100 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-kemenag-200 transition">
+                            <i class="fas fa-book-reader text-2xl text-kemenag-600"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">1. Belajar</h3>
+                        <p class="text-sm text-gray-600 mb-4">Pahami konsep relasi dan fungsi beserta penyajiannya melalui studi kasus Pohuwato.</p>
+                        <div class="flex items-center text-sm font-bold text-kemenag-600">
+                            <i class="fas fa-unlock-alt mr-2"></i> TERBUKA
+                        </div>
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-gray-200 h-2 mt-4 rounded-full overflow-hidden">
+                            <div id="prog-belajar" class="bg-kemenag-500 h-full w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Menu 2: Bermain (Terkunci awal) -->
+                    <div id="card-bermain" onclick="checkLock('bermain')" class="w-full md:w-1/3 glass p-6 rounded-3xl cursor-pointer transition duration-300 opacity-75 grayscale border-b-4 border-gray-300">
+                        <div class="w-16 h-16 bg-gray-200 rounded-2xl flex items-center justify-center mb-4" id="icon-bg-bermain">
+                            <i class="fas fa-gamepad text-2xl text-gray-500" id="icon-bermain"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">2. Bermain</h3>
+                        <p class="text-sm text-gray-600 mb-4">10 Tantangan gamifikasi untuk melatih literasi dan numerasi dasar secara seru.</p>
+                        <div class="flex items-center text-sm font-bold text-red-500" id="status-bermain">
+                            <i class="fas fa-lock mr-2"></i> TERKUNCI
+                        </div>
+                        <div class="w-full bg-gray-200 h-2 mt-4 rounded-full overflow-hidden hide" id="prog-bermain-container">
+                            <div id="prog-bermain" class="bg-gold-500 h-full w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Menu 3: Berlatih (Terkunci awal) -->
+                    <div id="card-berlatih" onclick="checkLock('berlatih')" class="w-full md:w-1/3 glass p-6 rounded-3xl cursor-pointer transition duration-300 opacity-75 grayscale border-b-4 border-gray-300">
+                        <div class="w-16 h-16 bg-gray-200 rounded-2xl flex items-center justify-center mb-4" id="icon-bg-berlatih">
+                            <i class="fas fa-pencil-alt text-2xl text-gray-500" id="icon-berlatih"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">3. Berlatih</h3>
+                        <p class="text-sm text-gray-600 mb-4">Uji kemampuan tertulismu dengan 10 soal evaluasi berjenjang (Dasar hingga HOTS).</p>
+                        <div class="flex items-center text-sm font-bold text-red-500" id="status-berlatih">
+                            <i class="fas fa-lock mr-2"></i> TERKUNCI
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Referensi Materi Button -->
+                <div class="w-full mt-2">
+                    <div onclick="nav('screen-dashboard', 'screen-referensi')" class="w-full glass p-4 md:p-6 rounded-2xl cursor-pointer hover:-translate-y-1 transition duration-300 flex items-center justify-between border-l-4 border-red-500 shadow-sm bg-white/70">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4 shrink-0">
+                                <i class="fas fa-file-pdf text-2xl text-red-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg md:text-xl font-bold text-gray-800">Referensi Materi (PDF)</h3>
+                                <p class="text-xs md:text-sm text-gray-600">Buka modul rangkuman lengkap materi Relasi dan Fungsi</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400 text-xl ml-2"></i>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 6. LAYER BELAJAR (Materi Mendalam)         -->
+        <!-- ========================================== -->
+        <section id="screen-belajar" class="absolute inset-0 w-full h-full bg-white flex flex-col hide">
+            <!-- Header -->
+            <header class="bg-white border-b p-4 flex justify-between items-center shadow-sm shrink-0">
+                <button onclick="nav('screen-belajar', 'screen-dashboard')" class="text-gray-500 hover:text-kemenag-600 px-3 py-1 bg-gray-100 rounded-lg"><i class="fas fa-arrow-left mr-2"></i>Dashboard</button>
+                <div class="font-bold text-kemenag-700">Materi <span id="materi-indicator">1/8</span></div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50" id="materi-scroll-area">
+                <div class="max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100" id="materi-content-container">
+                    <!-- Dynamic Content injected here -->
+                </div>
+                
+                <!-- Interactive Mini Quiz at bottom -->
+                <div class="max-w-3xl mx-auto bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-2xl mt-6 shadow-sm" id="materi-quiz-container">
+                    <h4 class="font-bold text-blue-800 mb-3"><i class="fas fa-check-circle mr-2"></i>Aktivitas Pemahaman Cepat</h4>
+                    <p class="text-sm text-gray-700 mb-4" id="materi-quiz-q"></p>
+                    <div id="materi-quiz-options" class="flex flex-col gap-2">
+                        <!-- Options injected -->
+                    </div>
+                    <p id="materi-quiz-feedback" class="mt-3 text-sm font-bold hidden"></p>
+                </div>
+
+                <!-- Nav Buttons -->
+                <div class="max-w-3xl mx-auto flex justify-between mt-8 mb-12">
+                    <button id="btn-materi-prev" onclick="changeMateri(-1)" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50">Sebelumnya</button>
+                    <button id="btn-materi-next" onclick="changeMateri(1)" class="px-6 py-2 bg-kemenag-600 text-white rounded-lg font-semibold hover:bg-kemenag-700 shadow disabled:opacity-50 opacity-50 cursor-not-allowed">Jawab Aktivitas Dulu</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 7. LAYER BERMAIN (Gamifikasi)              -->
+        <!-- ========================================== -->
+        <section id="screen-bermain" class="absolute inset-0 w-full h-full bg-white flex flex-col hide">
+            <!-- Header -->
+            <header class="bg-gold-500 text-white p-4 flex justify-between items-center shadow-md shrink-0">
+                <button onclick="confirmExit('bermain')" class="text-white/80 hover:text-white px-3 py-1 bg-black/10 rounded-lg"><i class="fas fa-times mr-2"></i>Keluar</button>
+                <div class="font-bold">Tantangan <span id="bermain-indicator">1/10</span></div>
+            </header>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 h-1 shrink-0"><div id="bermain-progress-bar" class="bg-kemenag-600 h-full w-[10%] transition-all"></div></div>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50">
+                <div class="max-w-3xl mx-auto">
+                    <!-- Stimulus Area -->
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-200 mb-6 text-justify text-gray-700 leading-relaxed text-sm md:text-base shadow-inner" id="bermain-stimulus">
+                        <!-- Stimulus injected -->
+                    </div>
+
+                    <!-- Question / Mechanics Area -->
+                    <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-gold-400" id="bermain-interactive-area">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800" id="bermain-question-text"></h3>
+                        <div id="bermain-mechanic-container" class="w-full">
+                            <!-- DragDrop/Match/MCQ injected -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 8. LAYER BERLATIH (Asesmen)                -->
+        <!-- ========================================== -->
+        <section id="screen-berlatih" class="absolute inset-0 w-full h-full bg-white flex flex-col hide">
+             <!-- Header -->
+             <header class="bg-kemenag-700 text-white p-4 flex justify-between items-center shadow-md shrink-0">
+                <button onclick="confirmExit('berlatih')" class="text-white/80 hover:text-white px-3 py-1 bg-black/10 rounded-lg"><i class="fas fa-times mr-2"></i>Keluar</button>
+                <div class="font-bold flex items-center">
+                    Soal <span id="berlatih-indicator" class="mx-1">1/10</span> 
+                    <span id="berlatih-level-badge" class="ml-2 text-xs px-2 py-1 rounded bg-white text-kemenag-700 font-bold">L1</span>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50 relative">
+                <div class="max-w-3xl mx-auto pb-24">
+                    <!-- Stimulus -->
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border-l-4 border-kemenag-500 mb-6 text-justify text-gray-700 leading-relaxed text-sm md:text-base" id="berlatih-stimulus"></div>
+                    
+                    <!-- Question & Options -->
+                    <div class="bg-white p-6 rounded-2xl shadow-md">
+                        <h3 class="text-lg font-bold mb-6 text-gray-800" id="berlatih-q-text"></h3>
+                        <div id="berlatih-options" class="space-y-3">
+                            <!-- Radio injected -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Nav -->
+            <div class="absolute bottom-0 w-full bg-white border-t p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] shrink-0 z-10">
+                <div class="max-w-3xl mx-auto flex justify-between items-center">
+                    <button id="btn-berlatih-prev" onclick="navBerlatih(-1)" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 hidden">Sebelumnya</button>
+                    <div class="flex-1"></div>
+                    <button id="btn-berlatih-next" onclick="navBerlatih(1)" class="px-8 py-2 bg-kemenag-600 text-white rounded-lg font-bold hover:bg-kemenag-700 shadow">Selanjutnya</button>
+                    <button id="btn-berlatih-submit" onclick="submitBerlatih()" class="px-8 py-2 bg-gold-500 text-white rounded-lg font-bold hover:bg-gold-600 shadow hidden btn-glow">Kumpulkan</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 9. REPORT SCREEN & PDF RENDER AREA         -->
+        <!-- ========================================== -->
+        <section id="screen-report" class="absolute inset-0 w-full h-full bg-gray-100 flex flex-col hide overflow-y-auto">
+            <div class="max-w-4xl mx-auto w-full p-4 md:p-8">
+                
+                <!-- Action Buttons (No Print) -->
+                <div class="flex justify-between mb-6 no-print">
+                    <button onclick="nav('screen-report','screen-dashboard')" class="px-4 py-2 bg-white text-gray-700 rounded-lg shadow hover:bg-gray-50"><i class="fas fa-home mr-2"></i>Kembali ke Menu</button>
+                    <button onclick="generatePDF()" class="px-6 py-2 bg-kemenag-600 text-white rounded-lg shadow font-bold hover:bg-kemenag-700 btn-glow"><i class="fas fa-file-pdf mr-2"></i>Unduh PDF Laporan</button>
+                </div>
+
+                <!-- ACTUAL REPORT CONTENT (Will be printed/PDF'd) -->
+                <div id="pdf-content" class="bg-white p-8 md:p-12 rounded-lg shadow-2xl text-gray-800">
+                    
+                    <!-- KOP SURAT -->
+                    <div class="border-b-4 border-kemenag-800 pb-4 mb-6 text-center flex flex-col items-center">
+                        <div class="flex items-center justify-center mb-2">
+                            <!-- Kemenag / School Logo Placeholder -->
+                            <div class="w-16 h-16 bg-kemenag-100 border-2 border-kemenag-800 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-star-and-crescent text-2xl text-kemenag-800"></i>
+                            </div>
+                            <div>
+                                <h1 class="text-2xl font-black uppercase text-kemenag-900">MTs Negeri 1 Pohuwato</h1>
+                                <p class="text-sm font-semibold">Kecamatan Paguta, Kabupaten Pohuwato, Provinsi Gorontalo</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2 italic">Laporan Hasil Belajar Media Interaktif "Relasi dan Fungsi"</p>
+                        <p class="text-xs text-gray-500">Guru Pengampu: Dyah Hayuningtias Makalalag, S.Pd</p>
+                    </div>
+
+                    <!-- DATA SISWA -->
+                    <table class="w-full text-sm mb-6 border-collapse">
+                        <tr>
+                            <td class="py-1 font-bold w-32">Nama Siswa</td><td class="py-1 w-4">:</td><td class="py-1 border-b border-gray-300" id="rep-name"></td>
+                            <td class="py-1 font-bold w-24 pl-4">Tanggal</td><td class="py-1 w-4">:</td><td class="py-1 border-b border-gray-300" id="rep-date"></td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 font-bold">Kelas</td><td class="py-1">:</td><td class="py-1 border-b border-gray-300" id="rep-class"></td>
+                            <td class="py-1 font-bold pl-4">Predikat</td><td class="py-1">:</td><td class="py-1 border-b border-gray-300 font-black text-kemenag-700" id="rep-predikat"></td>
+                        </tr>
+                    </table>
+
+                    <!-- REKAPITULASI -->
+                    <div class="mb-6">
+                        <h3 class="font-bold text-lg bg-gray-100 p-2 border-l-4 border-gold-500 mb-3">A. Rincian Performa Kognitif</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="border rounded-lg p-4 text-center">
+                                <p class="text-gray-500 text-sm mb-1">Skor Bermain (Gamifikasi)</p>
+                                <p class="text-3xl font-black text-gold-600" id="rep-score-bermain">0/100</p>
+                            </div>
+                            <div class="border rounded-lg p-4 text-center bg-kemenag-50">
+                                <p class="text-gray-500 text-sm mb-1">Nilai Akhir Berlatih (Asesmen)</p>
+                                <p class="text-4xl font-black text-kemenag-700" id="rep-score-berlatih">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ANALISIS LEVEL -->
+                    <div class="mb-6">
+                        <h3 class="font-bold text-lg bg-gray-100 p-2 border-l-4 border-blue-500 mb-3">B. Analisis Penguasaan Level</h3>
+                        <table class="w-full text-sm border text-left">
+                            <thead class="bg-gray-100">
+                                <tr><th class="p-2 border">Level Kognitif</th><th class="p-2 border">Bobot Soal</th><th class="p-2 border">Perolehan Skor</th><th class="p-2 border">Keterangan</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="p-2 border">Level 1 (Pemahaman Dasar)</td><td class="p-2 border">24 Poin (Soal 1-3)</td><td class="p-2 border font-bold" id="rep-l1-score"></td><td class="p-2 border" id="rep-l1-desc"></td></tr>
+                                <tr><td class="p-2 border">Level 2 (Aplikasi & Penerapan)</td><td class="p-2 border">40 Poin (Soal 4-7)</td><td class="p-2 border font-bold" id="rep-l2-score"></td><td class="p-2 border" id="rep-l2-desc"></td></tr>
+                                <tr><td class="p-2 border bg-red-50">Level 3 (Penalaran HOTS)</td><td class="p-2 border bg-red-50">36 Poin (Soal 8-10)</td><td class="p-2 border font-bold text-red-600 bg-red-50" id="rep-l3-score"></td><td class="p-2 border bg-red-50" id="rep-l3-desc"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- KBC & CATATAN GURU -->
+                    <div class="mb-8">
+                        <h3 class="font-bold text-lg bg-gray-100 p-2 border-l-4 border-green-500 mb-3">C. Catatan Kurikulum Berbasis Cinta (KBC) & Rekomendasi</h3>
+                        <div class="border p-4 rounded-lg text-sm text-justify text-gray-700 leading-relaxed">
+                            <p class="mb-2"><strong class="text-kemenag-700">Integrasi Nilai Kemenag:</strong> Siswa telah merefleksikan pentingnya menjaga kelestarian alam wilayah tambang dan perkebunan Pohuwato, menerapkan kejujuran dalam berniaga (korespondensi satu-satu), serta mengimani keteraturan alam semesta (QS. Al-Qamar: 49) melalui konsep Fungsi Matematika.</p>
+                            <p><strong class="text-kemenag-700">Rekomendasi Guru:</strong> <span id="rep-rekomendasi"></span></p>
+                        </div>
+                    </div>
+
+                    <!-- TTD -->
+                    <div class="flex justify-end text-sm text-center pt-8">
+                        <div class="w-48">
+                            <p class="mb-16">Pohuwato, <span id="rep-ttd-date"></span><br>Guru Mata Pelajaran,</p>
+                            <p class="font-bold underline decoration-2 underline-offset-2">Dyah Hayuningtias Makalalag, S.Pd</p>
+                            <p>NIP. -</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 10. LAYER REFERENSI MATERI (DARI PDF)      -->
+        <!-- ========================================== -->
+        <section id="screen-referensi" class="absolute inset-0 w-full h-full bg-gray-50 flex flex-col hide z-20">
+            <header class="bg-red-700 text-white p-4 flex justify-between items-center shadow-md shrink-0">
+                <button onclick="nav('screen-referensi', 'screen-dashboard')" class="text-white/80 hover:text-white px-3 py-1 bg-black/10 rounded-lg"><i class="fas fa-arrow-left mr-2"></i>Kembali</button>
+                <div class="font-bold">Referensi Materi</div>
+            </header>
+            
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-100">
+                <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-gray-200 text-gray-800 text-sm md:text-base leading-relaxed text-justify">
+                    
+                    <div class="text-center mb-8 border-b-2 border-red-500 pb-4">
+                        <h1 class="text-2xl md:text-3xl font-black uppercase text-gray-900">Materi Matematika</h1>
+                        <h2 class="text-lg md:text-xl font-bold text-kemenag-700 mt-2">Relasi dan Fungsi serta Penyajiannya</h2>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">A. Tujuan Pembelajaran</h3>
+                    <p class="mb-2">Setelah mempelajari materi ini, peserta didik diharapkan mampu:</p>
+                    <ol class="list-decimal pl-6 mb-4 space-y-1">
+                        <li>Menjelaskan pengertian relasi dan fungsi.</li>
+                        <li>Menentukan domain, kodomain, dan range suatu fungsi.</li>
+                        <li>Membedakan relasi yang merupakan fungsi dan yang bukan fungsi.</li>
+                        <li>Menyajikan relasi dan fungsi dalam bentuk diagram panah, himpunan pasangan berurutan, tabel, dan grafik.</li>
+                        <li>Menyelesaikan permasalahan sederhana yang berkaitan dengan relasi dan fungsi dalam kehidupan sehari-hari.</li>
+                    </ol>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">B. Pengertian Relasi</h3>
+                    <p class="mb-2">Relasi adalah hubungan antara anggota suatu himpunan dengan anggota himpunan lainnya.</p>
+                    <p class="mb-2">Misalnya, terdapat dua himpunan berikut:<br>Himpunan A = {Siswa} <br>Himpunan B = {Mata Pelajaran}</p>
+                    <p class="mb-4">Relasi yang menghubungkan kedua himpunan tersebut adalah "menyukai mata pelajaran". Ani menyukai Matematika, Budi menyukai IPA, dan Citra menyukai IPS. Hubungan tersebut merupakan contoh relasi antara himpunan A dan himpunan B.</p>
+                    <p class="mb-2 font-bold italic">Contoh relasi dalam kehidupan sehari-hari:</p>
+                    <ul class="list-disc pl-6 mb-4 space-y-1">
+                        <li><strong>Siswa dan mata pelajaran:</strong> Relasi "menyukai" menghubungkan siswa dengan mata pelajaran yang disukai.</li>
+                        <li><strong>Orang dan olahraga:</strong> Relasi "menyukai olahraga" menghubungkan seseorang dengan olahraga favoritnya.</li>
+                    </ul>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">C. Cara Menyajikan Relasi</h3>
+                    <p class="mb-4">Relasi dapat disajikan dalam beberapa bentuk berikut.</p>
+                    
+                    <h4 class="font-bold text-gray-800 mb-1">1. Diagram Panah</h4>
+                    <p class="mb-3">Diagram panah adalah cara menyajikan relasi dengan menggunakan dua himpunan dan tanda panah untuk menunjukkan hubungan antaranggota himpunan.<br>
+                    <em>Contoh:</em> Diketahui A = {1, 2, 3} dan B = {2, 4, 6}. Relasi dari A ke B adalah "setengah dari", yaitu setiap anggota A bernilai setengah dari anggota B.<br>
+                    Setiap anggota A dihubungkan dengan anggota B yang nilainya dua kali lipat.</p>
+
+                    <h4 class="font-bold text-gray-800 mb-1">2. Himpunan Pasangan Berurutan</h4>
+                    <p class="mb-3">Himpunan pasangan berurutan adalah penyajian relasi menggunakan pasangan bilangan atau objek yang ditulis dalam bentuk (a, b).<br>
+                    Berdasarkan contoh sebelumnya, relasinya adalah: <strong>R = {(1, 2), (2, 4), (3, 6)}</strong><br>
+                    Angka pertama merupakan anggota himpunan A, sedangkan angka kedua merupakan anggota himpunan B.</p>
+
+                    <h4 class="font-bold text-gray-800 mb-1">3. Tabel</h4>
+                    <p class="mb-2">Relasi juga dapat disajikan dalam bentuk tabel.</p>
+                    <table class="w-full max-w-xs border-collapse border border-gray-300 text-center mb-2">
+                        <tr class="bg-gray-100"><th class="border border-gray-300 p-2">Anggota A (x)</th><th class="border border-gray-300 p-2">Anggota B (y)</th></tr>
+                        <tr><td class="border border-gray-300 p-2">1</td><td class="border border-gray-300 p-2">2</td></tr>
+                        <tr><td class="border border-gray-300 p-2">2</td><td class="border border-gray-300 p-2">4</td></tr>
+                        <tr><td class="border border-gray-300 p-2">3</td><td class="border border-gray-300 p-2">6</td></tr>
+                    </table>
+                    <p class="mb-4">Tabel tersebut menunjukkan bahwa nilai <em>y</em> selalu dua kali nilai <em>x</em>, sehingga dapat ditulis dengan rumus: <strong>y = 2x</strong></p>
+
+                    <h4 class="font-bold text-gray-800 mb-1">4. Grafik Kartesius</h4>
+                    <p class="mb-4">Grafik Kartesius adalah penyajian relasi dalam bentuk titik-titik pada bidang koordinat. Untuk pasangan berurutan (1, 2), (2, 4), dan (3, 6), titik-titik tersebut diletakkan pada bidang koordinat.<br><em>Catatan: titik yang ditampilkan adalah pasangan berurutan dengan y = 2x. Garis digunakan untuk membantu melihat polanya.</em></p>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">D. Pengertian Fungsi</h3>
+                    <p class="mb-4">Fungsi adalah relasi khusus yang memasangkan setiap anggota domain dengan <strong>tepat satu</strong> anggota kodomain. Artinya, setiap anggota domain harus memiliki pasangan, dan setiap anggota domain hanya boleh mempunyai satu pasangan.</p>
+                    <p class="mb-4 bg-blue-50 p-3 rounded-lg border-l-2 border-blue-400"><strong>Contoh fungsi:</strong><br>Diketahui A = {1, 2, 3}, B = {2, 4, 6}. Dengan aturan <strong>f(x) = 2x</strong> diperoleh:<br>
+                    f(1) = 2<br>f(2) = 4<br>f(3) = 6<br>
+                    Relasi tersebut merupakan fungsi karena setiap anggota A mempunyai tepat satu pasangan di B.</p>
+                    
+                    <p class="font-bold mt-4 mb-2">Perbedaan Relasi dan Fungsi:</p>
+                    <table class="w-full border-collapse border border-gray-300 mb-4 text-sm bg-white">
+                        <tr class="bg-gray-100 text-center">
+                            <th class="border border-gray-300 p-2 w-1/2">Relasi</th>
+                            <th class="border border-gray-300 p-2 w-1/2">Fungsi</th>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 p-2 align-top">Menyatakan hubungan antara anggota dua himpunan.</td>
+                            <td class="border border-gray-300 p-2 align-top">Relasi khusus dengan aturan pasangan yang tunggal untuk setiap anggota domain.</td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 p-2 align-top">Satu anggota domain dapat berpasangan dengan beberapa anggota kodomain.</td>
+                            <td class="border border-gray-300 p-2 align-top">Satu anggota domain tidak boleh memiliki lebih dari satu pasangan.</td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 p-2 align-top">Tidak semua relasi merupakan fungsi.</td>
+                            <td class="border border-gray-300 p-2 align-top">Setiap fungsi merupakan relasi.</td>
+                        </tr>
+                    </table>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">E. Domain, Kodomain, dan Range</h3>
+                    <p class="mb-2">Dalam suatu fungsi terdapat tiga istilah penting:</p>
+                    <ul class="list-disc pl-6 mb-4 space-y-1">
+                        <li><strong>Domain (daerah asal):</strong> Himpunan semua anggota yang menjadi masukan atau input.</li>
+                        <li><strong>Kodomain (daerah kawan):</strong> Himpunan tujuan yang memuat kemungkinan hasil pemetaan.</li>
+                        <li><strong>Range (daerah hasil):</strong> Himpunan anggota kodomain yang benar-benar mendapatkan pasangan dari domain.</li>
+                    </ul>
+                    <p class="mb-4"><strong>Contoh:</strong><br>
+                    Diketahui fungsi f(x) = 2x, dengan Domain = {1, 2, 3}, Kodomain = {2, 4, 6, 8}. Maka Range = {2, 4, 6}.<br>
+                    Angka 8 termasuk kodomain, tetapi bukan range karena tidak menjadi hasil pemetaan dari anggota domain mana pun.</p>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">F. Syarat Suatu Relasi Menjadi Fungsi</h3>
+                    <p class="mb-2">Suatu relasi disebut fungsi apabila memenuhi ketentuan berikut:</p>
+                    <ol class="list-decimal pl-6 mb-4 space-y-1">
+                        <li>Setiap anggota domain mempunyai pasangan.</li>
+                        <li>Setiap anggota domain hanya mempunyai satu pasangan.</li>
+                        <li>Anggota kodomain boleh tidak mendapatkan pasangan.</li>
+                        <li>Beberapa anggota domain boleh dipasangkan dengan anggota kodomain yang sama.</li>
+                    </ol>
+                    <p class="mb-4"><strong class="text-kemenag-600">Fungsi:</strong> Setiap anggota domain memiliki tepat satu pasangan.<br>
+                    <strong class="text-red-500">Bukan fungsi:</strong> Anggota domain ada yang memiliki dua pasangan (bercabang) atau ada anggota domain yang tidak memiliki pasangan.</p>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">G. Notasi dan Nilai Fungsi</h3>
+                    <p class="mb-4">Fungsi biasanya dinyatakan dengan notasi: <strong>f : A → B</strong><br>
+                    Notasi tersebut berarti fungsi f memetakan anggota himpunan A ke himpunan B.</p>
+                    <p class="mb-2">Jika rumus fungsi adalah: <strong>f(x) = 3x + 2</strong><br>
+                    Maka untuk menentukan nilai f(2), gantilah x dengan 2. Jadi, nilai f(2):<br>
+                    f(2) = 3(2) + 2 = 6 + 2 = 8</p>
+                    <p class="mb-4">Contoh lainnya, jika <strong>f(x) = x² - 1</strong> maka:<br>
+                    f(3) = 3² - 1 = 9 - 1 = 8</p>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">H. Contoh Soal dan Pembahasan</h3>
+                    
+                    <div class="mb-4 p-4 border border-gray-300 rounded-lg bg-gray-50 shadow-sm">
+                        <p class="font-bold text-kemenag-800">Contoh 1: Menentukan relasi</p>
+                        <p class="mb-2">Diketahui A = {1, 2, 3} dan B = {2, 4, 6}. Tentukan himpunan pasangan berurutan untuk relasi tersebut jika aturan pemetaannya menghasilkan himpunan B!</p>
+                        <p class="font-bold text-gray-700">Penyelesaian:</p>
+                        <p>Angka 1 berpasangan dengan 2.<br>Angka 2 berpasangan dengan 4.<br>Angka 3 berpasangan dengan 6.<br>
+                        Jadi: <strong>R = {(1, 2), (2, 4), (3, 6)}</strong></p>
+                    </div>
+
+                    <div class="mb-4 p-4 border border-gray-300 rounded-lg bg-gray-50 shadow-sm">
+                        <p class="font-bold text-kemenag-800">Contoh 2: Menentukan domain, kodomain, dan range</p>
+                        <p class="mb-2">Diketahui: f = {(1, 3), (2, 5), (3, 7)}. Jika kodomainnya adalah {3, 5, 7, 9}, tentukan domain dan range.</p>
+                        <p class="font-bold text-gray-700">Penyelesaian:</p>
+                        <p>Domain = {1, 2, 3}<br>Kodomain = {3, 5, 7, 9}<br>Range = {3, 5, 7}</p>
+                    </div>
+
+                    <div class="mb-4 p-4 border border-gray-300 rounded-lg bg-gray-50 shadow-sm">
+                        <p class="font-bold text-kemenag-800">Contoh 3: Menentukan nilai fungsi</p>
+                        <p class="mb-2">Diketahui f(x) = 4x - 3. Tentukan f(5)!</p>
+                        <p class="font-bold text-gray-700">Penyelesaian:</p>
+                        <p>f(5) = 4(5) - 3 = 20 - 3 = 17.<br>Jadi, <strong>f(5) = 17</strong>.</p>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-8 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">I. Latihan Soal (Evaluasi Mandiri)</h3>
+                    <p class="mb-3 text-gray-600"><em>Cobalah jawab pertanyaan berikut di dalam hati untuk menguji pemahamanmu:</em></p>
+                    <ol class="list-decimal pl-6 mb-6 space-y-2">
+                        <li><strong>Apa yang dimaksud dengan relasi?</strong><br><span class="text-gray-500 text-sm">Jawaban: Hubungan antara anggota suatu himpunan dengan himpunan lain.</span></li>
+                        <li><strong>Diketahui A={1, 2, 3}. Jika f(x) = 2x, berapakah range fungsi tersebut?</strong><br><span class="text-gray-500 text-sm">Jawaban: {2, 4, 6}</span></li>
+                        <li><strong>Himpunan semua anggota yang menjadi masukan disebut...</strong><br><span class="text-gray-500 text-sm">Jawaban: Domain</span></li>
+                        <li><strong>Mengapa relasi {(1,a), (1,b)} BUKAN merupakan fungsi?</strong><br><span class="text-gray-500 text-sm">Jawaban: Karena anggota domain "1" memiliki dua pasangan, sedangkan fungsi tidak boleh bercabang.</span></li>
+                        <li><strong>Jika f(x) = 3x + 1, berapakah f(4)?</strong><br><span class="text-gray-500 text-sm">Jawaban: f(4) = 3(4) + 1 = 13.</span></li>
+                    </ol>
+
+                    <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2 bg-gray-100 px-3 py-1 rounded-l-lg border-l-4 border-kemenag-500">J. Kesimpulan</h3>
+                    <ol class="list-decimal pl-6 mb-6 space-y-1">
+                        <li>Relasi adalah hubungan antara anggota dua himpunan.</li>
+                        <li>Fungsi merupakan relasi khusus yang memasangkan setiap anggota domain dengan tepat satu anggota kodomain.</li>
+                        <li>Domain merupakan daerah asal, kodomain merupakan daerah kawan, dan range merupakan daerah hasil.</li>
+                        <li>Relasi dan fungsi dapat disajikan melalui diagram panah, himpunan pasangan berurutan, tabel, dan grafik Kartesius.</li>
+                        <li>Nilai fungsi dapat ditentukan dengan memasukkan nilai variabel ke dalam rumus fungsi.</li>
+                    </ol>
+                    
+                    <div class="mt-8 p-4 bg-kemenag-50 rounded-xl border border-kemenag-200 text-center">
+                        <i class="fas fa-lightbulb text-gold-500 text-2xl mb-2"></i>
+                        <p class="font-bold text-kemenag-800 italic">Pesan Pembelajaran:</p>
+                        <p class="text-gray-700">"Memahami relasi dan fungsi membantu kita mengenali hubungan antara dua kelompok data, baik dalam matematika maupun dalam kehidupan sehari-hari."</p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- DATA & LOGIC SCRIPTS -->
+    <script>
+        /* =========================================================================
+           GAS CONFIGURATION (Google Apps Script)
+           ========================================================================= */
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbx4pCblG9us7wkBaQT5z7Mpo3OgiPfC-x1Tf_Rk2wY64c2R1XSSrhxF1IIEnW4h-Q5Kmg/exec";
+
+        /* =========================================================================
+           SOUND SYSTEM (Web Audio API & BGM)
+           ========================================================================= */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let soundEnabled = true;
+        let isMusicPlaying = false;
+
+        function playTone(freq, type, duration, vol=0.1) {
+            if(!soundEnabled) return;
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSound(type) {
+            if(!soundEnabled) return;
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            
+            switch(type) {
+                case 'click':
+                    playTone(600, 'sine', 0.1, 0.05);
+                    break;
+                case 'transition':
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+                    break;
+                case 'correct':
+                    playTone(523.25, 'sine', 0.1, 0.1); // Nada C5
+                    setTimeout(() => playTone(659.25, 'sine', 0.2, 0.1), 100); // Nada E5
+                    break;
+                case 'wrong':
+                    playTone(200, 'sawtooth', 0.3, 0.1); // Nada Buzz Rendah
+                    break;
+            }
+        }
+
+        function toggleMusic() {
+            const bgm = document.getElementById('bgm-audio');
+            const btn = document.getElementById('btn-music');
+            if(isMusicPlaying) {
+                bgm.pause();
+                btn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                btn.classList.replace('bg-gold-500', 'bg-gray-400');
+                btn.classList.remove('btn-glow');
+                btn.classList.add('animate-bounce');
+            } else {
+                bgm.play().catch(e => console.log("Audio play failed:", e));
+                btn.innerHTML = '<i class="fas fa-music"></i>';
+                btn.classList.replace('bg-gray-400', 'bg-gold-500');
+                btn.classList.add('btn-glow');
+                btn.classList.remove('animate-bounce');
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+            }
+            isMusicPlaying = !isMusicPlaying;
+            playSound('click');
+        }
+
+        function autoStartMusic() {
+            if(!isMusicPlaying) toggleMusic();
+        }
+
+        /* =========================================================================
+           DATA CONTENT: MATERI, BERMAIN, BERLATIH (Dense, 100-200 words stimulus)
+           ========================================================================= */
+        const materiData = [
+            {
+                title: "1. Pengertian Relasi dan Sunnatullah",
+                content: `
+                    <div class="flex flex-col md:flex-row items-start gap-4 mb-4">
+                        <div class="flex-1">
+                            <p class="text-justify mb-4">Secara bahasa, <strong>Relasi</strong> berarti hubungan. Dalam matematika, relasi dari himpunan A ke himpunan B adalah aturan yang menghubungkan atau memasangkan anggota-anggota himpunan A dengan anggota himpunan B. Mari kita amati sekitar kita di MTsN 1 Pohuwato.</p>
+                            <p class="text-justify mb-4">Kecamatan Paguta memiliki lahan perkebunan yang subur. Terdapat relasi antara kelompok "Nama Petani" (Himpunan A) dengan "Jenis Tanaman" yang mereka tanam (Himpunan B). Misalnya, Pak Ali menanam Jagung, Pak Budi menanam Cengkeh, dan Pak Hasan menanam Jagung dan Kelapa. Ini adalah bentuk relasi alamiah.</p>
+                        </div>
+                        <div class="md:w-1/3 bg-kemenag-50 p-4 rounded-xl border border-kemenag-200">
+                            <p class="text-arabic text-center mb-2">وَالشَّمْسُ تَجْرِي لِمُسْتَقَرٍّ لَهَا ۚ ذَٰلِكَ تَقْدِيرُ الْعَزِيزِ الْعَلِيمِ</p>
+                            <p class="text-xs text-gray-600 text-center italic">"Dan matahari berjalan di tempat peredarannya. Demikianlah ketetapan Yang Maha Perkasa lagi Maha Mengetahui." (QS. Yasin: 38)</p>
+                        </div>
+                    </div>
+                    <p class="text-justify text-sm bg-blue-50 p-3 rounded-lg border-l-2 border-blue-400"><strong>Kurikulum Berbasis Cinta (KBC):</strong> Keteraturan relasi alam semesta dan kesuburan tanah Pohuwato adalah wujud cinta Allah kepada makhluk-Nya. Tugas kita adalah merawat perkebunan ini dan tidak merusaknya.</p>
+                `,
+                quiz: {
+                    q: "Relasi dari himpunan A ke himpunan B dalam matematika didefinisikan sebagai...",
+                    options: [
+                        "A. Penggabungan seluruh anggota A dan B menjadi satu",
+                        "B. Aturan yang menghubungkan/memasangkan anggota A dengan anggota B",
+                        "C. Pengurangan anggota A oleh anggota B secara teratur"
+                    ],
+                    correct: 1
+                }
+            },
+            {
+                title: "2. Menyajikan Relasi: Diagram Panah",
+                content: `
+                    <p class="text-justify mb-4">Cara paling mudah untuk melihat sebuah relasi adalah menggunakan <strong>Diagram Panah</strong>. Diagram ini membentuk pola arah dari himpunan asal menuju himpunan tujuan dengan garis beranak panah.</p>
+                    <p class="text-justify mb-4">Sebagai contoh, di wilayah pertambangan Pohuwato, terdapat aturan ketat keselamatan kerja. Tiga orang pekerja tambang yaitu {Ahmad, Budi, Cipto} diwajibkan memakai alat pelindung diri (APD) tertentu {Helm Katuk, Sepatu Boots, Rompi Reflektor}. Ahmad memakai Helm dan Sepatu, Budi memakai Sepatu, Cipto memakai Rompi dan Helm. Relasi "memakai perlengkapan" ini dapat digambar dengan dua lingkaran (oval) di mana panah ditarik dari nama pekerja ke jenis APD.</p>
+                    <div class="flex justify-center mb-4"><div class="px-6 py-4 bg-gray-100 rounded border border-gray-300 font-mono text-sm text-center">Ahmad ➔ Helm<br>Ahmad ➔ Sepatu<br>Budi ➔ Sepatu<br>Cipto ➔ Rompi<br>Cipto ➔ Helm</div></div>
+                    <p class="text-justify text-sm bg-blue-50 p-3 rounded-lg border-l-2 border-blue-400"><strong>KBC (Cinta Sesama):</strong> Aturan keselamatan kerja adalah bentuk cinta dan saling menjaga nyawa sesama manusia. Dalam Islam, menjaga satu nyawa sama dengan menjaga nyawa manusia seluruhnya.</p>
+                `,
+                quiz: {
+                    q: "Fungsi utama dari garis beranak panah pada Diagram Panah relasi adalah...",
+                    options: [
+                        "A. Menunjukkan arah hubungan dari anggota himpunan asal ke tujuan",
+                        "B. Memisahkan antara himpunan A dan himpunan B agar tidak tercampur",
+                        "C. Hanya sebagai hiasan visual agar diagram terlihat menarik"
+                    ],
+                    correct: 0
+                }
+            },
+            {
+                title: "3. Menyajikan Relasi: Koordinat Kartesius & Himpunan",
+                content: `
+                    <p class="text-justify mb-4">Selain diagram panah, relasi dapat disajikan dengan dua cara lain: <strong>Himpunan Pasangan Berurutan</strong> dan <strong>Diagram Kartesius</strong>.</p>
+                    <p class="text-justify mb-4">Bila disajikan dengan Himpunan Pasangan Berurutan, kita menulisnya dalam kurung kurawal {(Ahmad, Helm), (Ahmad, Sepatu)...}. Anggota pertama (x) berasal dari Himpunan A, dan anggota kedua (y) dari Himpunan B.</p>
+                    <p class="text-justify mb-4">Dalam Diagram Kartesius, kita menggunakan sumbu mendatar (Sumbu X) untuk himpunan A dan sumbu tegak (Sumbu Y) untuk himpunan B. Titik koordinat (x,y) menandai adanya relasi. Bayangkan kita memetakan titik-titik koordinat daerah resapan air di pegunungan Paguta agar area tersebut tidak ditambang secara ilegal. Memetakan koordinat ini sangat penting untuk kelestarian.</p>
+                    <p class="text-justify text-sm bg-blue-50 p-3 rounded-lg border-l-2 border-blue-400"><strong>KBC (Cinta Lingkungan):</strong> Memahami koordinat membantu kita memetakan mana area tambang rakyat (legal) dan mana kawasan hutan lindung yang wajib dijaga sebagai sumber air MTsN 1 Pohuwato.</p>
+                `,
+                quiz: {
+                    q: "Bagaimana cara penulisan himpunan pasangan berurutan yang benar jika x berelasi dengan y?",
+                    options: [
+                        "A. {x , y}",
+                        "B. {(x, y)}",
+                        "C. [x -> y]"
+                    ],
+                    correct: 1
+                }
+            },
+            {
+                title: "4. Pengertian Fungsi (Pemetaan)",
+                content: `
+                    <p class="text-justify mb-4"><strong>Fungsi</strong> (atau Pemetaan) adalah bentuk <em>relasi yang sangat khusus</em>. Syarat suatu relasi dari himpunan A ke himpunan B disebut fungsi adalah: <strong>Setiap anggota himpunan A (asal) harus dipasangkan tepat SATU kali dengan anggota himpunan B.</strong></p>
+                    <div class="flex flex-col md:flex-row items-center gap-4 mb-4">
+                        <div class="flex-1">
+                            <p class="text-justify">Jika relasi biasa boleh bercabang dari asal (satu orang memakai dua alat), maka dalam fungsi, asal tidak boleh bercabang (selingkuh) dan tidak boleh kosong (jomblo). Contoh nyata di MTsN 1 Pohuwato: Relasi antara "Siswa" dengan "Nomor Induk Siswa Nasional (NISN)". Setiap siswa pasti memiliki tepat SATU NISN. Tidak mungkin satu siswa punya dua NISN, dan tidak mungkin ada siswa tanpa NISN.</p>
+                        </div>
+                        <div class="md:w-1/3 bg-kemenag-50 p-4 rounded-xl text-sm">
+                            <p class="text-arabic text-center mb-1">إِنَّا كُلَّ شَيْءٍ خَلَقْنَاهُ بِقَدَرٍ</p>
+                            <p class="text-gray-600 text-center italic">"Sungguh, Kami menciptakan segala sesuatu menurut ukuran." (QS. Al-Qamar: 49)</p>
+                        </div>
+                    </div>
+                `,
+                quiz: {
+                    q: "Apa syarat utama agar sebuah relasi dari himpunan A ke himpunan B dapat disebut sebagai Fungsi (Pemetaan)?",
+                    options: [
+                        "A. Setiap anggota B dipasangkan tepat satu kali dengan anggota A",
+                        "B. Setiap anggota A dipasangkan tepat satu kali dengan anggota B",
+                        "C. Anggota A boleh memiliki lebih dari satu pasangan di B asalkan adil"
+                    ],
+                    correct: 1
+                }
+            },
+            {
+                title: "5. Istilah Penting: Domain, Kodomain, Range",
+                content: `
+                    <p class="text-justify mb-4">Dalam mempelajari fungsi, ada tiga istilah penting yang wajib dipahami, yaitu: <strong>Domain</strong>, <strong>Kodomain</strong>, dan <strong>Range</strong>.</p>
+                    <ul class="list-disc pl-5 mb-4 text-justify space-y-2">
+                        <li><strong>Domain (Daerah Asal):</strong> Himpunan A yang berada di sebelah kiri. Semua anggotanya wajib memiliki pasangan tepat satu.</li>
+                        <li><strong>Kodomain (Daerah Kawan):</strong> Himpunan B yang berada di sebelah kanan secara utuh.</li>
+                        <li><strong>Range (Daerah Hasil):</strong> Anggota himpunan B (Kodomain) yang <em>benar-benar terpilih/terkena panah</em> dari himpunan A.</li>
+                    </ul>
+                    <p class="text-justify mb-4">Konteks lokal: Pemerintah Pohuwato (Domain) menyalurkan bantuan bibit pohon produktif. Daftar bibit yang tersedia di dinas adalah {Mangga, Rambutan, Cengkeh, Kopi} (Kodomain). Namun, karena kecocokan tanah Paguta, yang diambil dan ditanam warga hanyalah {Cengkeh, Kopi}. Maka {Cengkeh, Kopi} itulah yang disebut <strong>Range (Daerah Hasil)</strong>.</p>
+                `,
+                quiz: {
+                    q: "Himpunan semua anggota daerah kawan (himpunan B) yang mempunyai pasangan (terkena panah) dari daerah asal disebut...",
+                    options: [
+                        "A. Domain",
+                        "B. Kodomain",
+                        "C. Range (Daerah Hasil)"
+                    ],
+                    correct: 2
+                }
+            },
+            {
+                title: "6. Menentukan Banyaknya Pemetaan",
+                content: `
+                    <p class="text-justify mb-4">Jika kita mengetahui jumlah anggota Himpunan A (ditulis <code>n(A)</code>) dan jumlah anggota Himpunan B (ditulis <code>n(B)</code>), kita bisa menghitung berapa banyak variasi pemetaan (fungsi) yang mungkin dibentuk dari A ke B maupun dari B ke A.</p>
+                    <div class="bg-gray-100 p-4 rounded-lg mb-4 text-center font-bold font-mono">
+                        Banyak Pemetaan dari A ke B = n(B) <sup>n(A)</sup><br><br>
+                        Banyak Pemetaan dari B ke A = n(A) <sup>n(B)</sup>
+                    </div>
+                    <p class="text-justify mb-4">Contoh: Di sebuah area bekas tambang rakyat, sebuah LSM pemerhati lingkungan (KBC Cinta Alam) akan membagikan 2 jenis alat penyaring air baku {Filter Pasir, Filter Karbon} (himpunan A, n=2) ke 3 kelompok tani warga {Kelompok Makmur, Kelompok Jaya, Kelompok Sejahtera} (Himpunan B, n=3). Banyak kemungkinan cara dinas memetakan jenis filter air ke kelompok tani adalah pemetaan dari A ke B, yaitu 3<sup>2</sup> = 9 kemungkinan.</p>
+                `,
+                quiz: {
+                    q: "Jika Himpunan P memiliki 3 anggota dan Himpunan Q memiliki 4 anggota, berapakah banyak kemungkinan pemetaan dari himpunan P ke himpunan Q?",
+                    options: [
+                        "A. 12 (karena 3 x 4 = 12)",
+                        "B. 64 (karena 4 pangkat 3 = 64)",
+                        "C. 81 (karena 3 pangkat 4 = 81)"
+                    ],
+                    correct: 1
+                }
+            },
+            {
+                title: "7. Korespondensi Satu-Satu",
+                content: `
+                    <p class="text-justify mb-4">Tingkatan tertinggi dari sebuah fungsi adalah <strong>Korespondensi Satu-Satu</strong>. Syarat korespondensi satu-satu sangat adil dan ketat:</p>
+                    <ol class="list-decimal pl-5 mb-4 text-justify space-y-1">
+                        <li>Jumlah anggota himpunan A dan B <strong>harus sama</strong> ( n(A) = n(B) ).</li>
+                        <li>Setiap anggota A dipasangkan dengan tepat satu anggota B.</li>
+                        <li>Setiap anggota B juga dipasangkan dengan tepat satu anggota A (tidak ada yang tersisa di B).</li>
+                    </ol>
+                    <p class="text-justify mb-4">Contoh nyata di masyarakat Paguta: Relasi antara "Kepala Keluarga" dengan "Nomor Meteran Listrik Rumah (ID Pelanggan PLN)". Karena tidak ada satu rumah yang memakai meteran rumah lain, dan tidak ada meteran yang dipakai dua rumah berbeda, ini adalah korespondensi satu-satu. Hubungan ini melatih <strong>kejujuran dan keadilan</strong> (KBC), karena setiap orang membayar tagihan sesuai dengan penggunaan meterannya sendiri.</p>
+                `,
+                quiz: {
+                    q: "Manakah pernyataan di bawah ini yang merupakan syarat MUTLAK agar terjadi korespondensi satu-satu?",
+                    options: [
+                        "A. Anggota himpunan A harus lebih banyak dari himpunan B",
+                        "B. Anggota himpunan B harus memiliki lebih dari satu pasangan",
+                        "C. Jumlah anggota himpunan A harus sama dengan himpunan B"
+                    ],
+                    correct: 2
+                }
+            },
+            {
+                title: "8. Notasi, Nilai Fungsi dan Grafik Fungsi",
+                content: `
+                    <p class="text-justify mb-4">Fungsi sering dinotasikan dengan huruf kecil seperti <code>f</code>, <code>g</code>, atau <code>h</code>. Notasi fungsi <code>f : x → 2x + 1</code> dibaca "fungsi f memetakan x ke 2x + 1". Rumus fungsinya ditulis <code>f(x) = 2x + 1</code>.</p>
+                    <p class="text-justify mb-4"><strong>Mencari Nilai Fungsi:</strong> Jika diketahui f(x) = 50.000x, di mana x adalah jumlah karung jagung hasil kebun Paguta, dan f(x) adalah harga jual (dalam Rupiah). Jika seorang petani menjual 4 karung (x=4), maka pendapatannya (nilai fungsi) adalah f(4) = 50.000(4) = 200.000 Rupiah. Dari nilai-nilai fungsi ini, kita bisa menggambar <strong>Grafik Fungsi</strong> berupa garis lurus pada diagram kartesius.</p>
+                    <p class="text-justify text-sm bg-blue-50 p-3 rounded-lg border-l-2 border-blue-400"><strong>KBC (Moderasi & Syukur):</strong> Menghitung nilai fungsi pertanian mengajarkan kita bersyukur atas rezeki. Semakin besar <em>effort</em> bertani (x membesar), insyaAllah hasil (y) membesar. "Sesungguhnya Allah tidak mengubah keadaan sesuatu kaum sehingga mereka mengubah keadaan yang ada pada diri mereka sendiri." (QS. Ar-Ra'd: 11).</p>
+                `,
+                quiz: {
+                    q: "Jika diketahui rumus fungsi harga panen jagung adalah f(x) = 30.000x + 15.000 (termasuk biaya angkut). Berapa nilai f(3) atau harga untuk 3 karung?",
+                    options: [
+                        "A. Rp 90.000",
+                        "B. Rp 105.000",
+                        "C. Rp 45.000"
+                    ],
+                    correct: 1
+                }
+            }
+        ];
+
+        const bermainData = [
+            {
+                type: "mcq",
+                stimulus: "MTs Negeri 1 Pohuwato terletak di Kecamatan Paguta, daerah yang dikenal dengan bentang alamnya berupa pegunungan yang sebagian areanya memiliki potensi tambang, serta dataran untuk perkebunan warga. Masyarakat berinteraksi dengan alam secara beragam. Dalam konsep matematika, kita dapat memetakan relasi himpunan A {Warga Desa} dengan himpunan B {Mata Pencaharian}. Pak Budi bekerja sebagai Petani Jagung dan juga Penambang Emas Rakyat. Sementara Pak Tono murni berdagang di pasar, dan Pak Udin menjadi Petani Kelapa. Mengingat Pak Budi memiliki dua jenis pekerjaan, maka relasi antara himpunan A dan B ini masuk ke dalam kategori apa dalam kajian matematika relasi dan fungsi?",
+                q: "Berdasarkan stimulus panjang di atas, manakah pernyataan yang tepat mengenai hubungan antara Himpunan Warga dan Himpunan Pekerjaan?",
+                options: ["Termasuk Korespondensi Satu-satu karena setiap orang harus bekerja", "Hanya merupakan Relasi biasa, BUKAN Fungsi, karena Pak Budi memiliki dua cabang pemetaan", "Merupakan Fungsi (Pemetaan) karena setiap orang memiliki pekerjaan masing-masing"],
+                correct: 1
+            },
+            {
+                type: "mcq",
+                stimulus: "Islam mengajarkan bahwa segala sesuatu diciptakan Allah dengan ukuran dan ketetapan yang presisi, sebagaimana disebutkan dalam Surah Al-Qamar ayat 49. Keteraturan ini dapat dipahami melalui konsep Fungsi dalam matematika. Sebagai wujud cinta kepada sesama dan kepatuhan administrasi negara, setiap warga madrasah, termasuk siswa MTsN 1 Pohuwato, wajib tercatat dengan baik. Misalkan Himpunan A adalah {Siswa Kelas VIII} dan Himpunan B adalah {Nomor Induk Siswa Nasional (NISN)}. Kepala Tata Usaha mendata bahwa setiap siswa yang aktif sekolah dipastikan memiliki tepat satu NISN unik yang dikeluarkan Kementerian Pendidikan.",
+                q: "Dari narasi keteraturan administrasi di atas, relasi antara siswa dan NISN memenuhi syarat matematika sebagai:",
+                options: ["Fungsi saja, karena mungkin ada NISN ganda", "Bukan Fungsi, karena NISN bisa tidak dimiliki siswa", "Fungsi yang sekaligus merupakan Korespondensi Satu-Satu"],
+                correct: 2
+            },
+            {
+                type: "multi",
+                stimulus: "Sebagai bentuk implementasi Kurikulum Berbasis Cinta (KBC) terhadap lingkungan hidup, madrasah mengadakan program reboisasi (penanaman kembali) di area perbukitan bekas galian tambang Pohuwato agar tidak terjadi longsor dan menjaga sumber air tanah. Ada 4 kelompok siswa, sebut saja Himpunan X = {Kelompok 1, Kelompok 2, Kelompok 3, Kelompok 4}. Mereka akan menanam bibit pohon pelindung, Himpunan Y = {Trembesi, Mahoni, Beringin}. Aturan penugasannya adalah setiap kelompok WAJIB memilih dan menanam TEPAT SATU jenis pohon untuk dirawat selama 6 bulan penuh.",
+                q: "Pilihlah DUA pernyataan yang PALING TEPAT terkait narasi reboisasi dan konsep fungsi di atas! (Pilih 2 jawaban yang benar)",
+                options: ["Relasi yang terjadi dari X ke Y adalah sebuah Fungsi (Pemetaan)", "Anggota Himpunan X (Kelompok) disebut sebagai Kodomain", "Relasi ini BUKAN fungsi karena jumlah Himpunan X dan Y tidak sama", "Anggota Himpunan Y yang terpilih untuk ditanam disebut Range (Daerah Hasil)"],
+                correct: [0, 3]
+            },
+            {
+                type: "multi",
+                stimulus: "Data penjualan hasil panen jagung para orang tua siswa di Paguta selama bulan panen raya menunjukkan kenaikan yang konsisten, berkat curah hujan yang baik (Sunnatullah). Jika panen 1 ton, keuntungannya bersih Rp 3 Juta. Jika panen 2 ton, keuntungan Rp 6 Juta. Jika panen 3 ton, keuntungan Rp 9 Juta. Hubungan berat panen (x) terhadap keuntungan (y) dapat dinyatakan dalam rumus fungsi matematika. Kejujuran dalam menimbang panen sangat ditekankan oleh para petani sebagai wujud moderasi dan menjaga keberkahan rezeki dari Allah SWT.",
+                q: "Berdasarkan data keuntungan panen petani Paguta di atas, pilihlah DUA bentuk penyajian fungsi yang tepat!",
+                options: ["Rumus fungsinya adalah f(x) = 3x (dalam satuan juta Rupiah)", "Jika digambar pada grafik kartesius, akan membentuk garis melengkung parabola (U)", "Himpunan pasangan berurutannya adalah {(1,3), (2,6), (3,9)}", "Domain dari fungsi tersebut adalah {3, 6, 9}"],
+                correct: [0, 2]
+            },
+            {
+                type: "match",
+                stimulus: "Mari kita pahami istilah dasar fungsi. Dalam pendistribusian zakat fitrah di MTsN 1 Pohuwato (sebagai bentuk cinta sesama), panitia Amil Zakat memetakan data. Himpunan A berisi {Data Muzakki / Pembayar Zakat}. Himpunan B berisi {Seluruh Asnaf / Golongan Penerima Zakat yang ada di Al-Qur'an}. Setelah dilakukan penyaluran, ternyata di desa tersebut hanya ada Fakir dan Miskin yang menerima zakat, sedangkan golongan lain tidak ada (tidak menerima).",
+                q: "Jodohkanlah istilah fungsi berikut dengan elemen yang sesuai berdasarkan kasus pembagian zakat di atas! (Klik kotak kiri, lalu klik pasangan yang tepat di kotak kanan)",
+                pairs: [
+                    { left: "Domain", right: "Data Muzakki (Pembayar Zakat)" },
+                    { left: "Kodomain", right: "Seluruh 8 Asnaf Zakat dalam Al-Qur'an" },
+                    { left: "Range", right: "Fakir dan Miskin (Yang benar-benar menerima)" }
+                ]
+            },
+            {
+                type: "match",
+                stimulus: "Di wilayah tambang Pohuwato, sebuah perusahaan wajib menyerahkan CSR (Corporate Social Responsibility) untuk perbaikan fasilitas umum. Ada 2 perusahaan tambang lokal: P={PT. A, PT. B} yang akan membantu 3 MTs di Paguta: Q={MTs 1, MTs 2, MTs 3}. Aturan pemerintah daerah menyatakan bahwa pemetaan harus berupa Fungsi dari himpunan P (Perusahaan) ke himpunan Q (Sekolah). Kita perlu menghitung banyak kemungkinan variasi pemetaan bantuan ini berdasarkan rumus n(Q) pangkat n(P).",
+                q: "Hitung dan jodohkan rumus jumlah pemetaan berikut agar sesuai dengan konsep fungsi!",
+                pairs: [
+                    { left: "Banyak Pemetaan dari P ke Q", right: "3² = 9 Kemungkinan" },
+                    { left: "Banyak Pemetaan dari Q ke P", right: "2³ = 8 Kemungkinan" },
+                    { left: "Jumlah Anggota n(P) + n(Q)", right: "5 (Total perusahaan dan sekolah)" }
+                ]
+            },
+            {
+                type: "sort",
+                stimulus: "Siswa MTsN 1 Pohuwato melakukan kunjungan edukatif ke area perkebunan kakao. Pak Tani menunjukkan pertumbuhan tinggi bibit kakao setiap minggunya yang sangat teratur. Pada minggu ke-1 tingginya 5 cm. Minggu ke-2 tingginya 10 cm. Minggu ke-3 tingginya 15 cm. Minggu ke-4 tingginya 20 cm. Guru matematika menjelaskan bahwa data pertumbuhan alamiah ini bisa diubah menjadi empat langkah penyajian relasi.",
+                q: "Urutkan langkah penyajian Fungsi/Relasi dari yang berwujud teks hingga menjadi gambar visual yang paling abstrak! (Gunakan panah untuk menggeser ke atas/bawah)",
+                items: [
+                    "Teks Narasi/Cerita (Contoh: Minggu 1 tinggi 5cm...)",
+                    "Tabel Relasi (Kolom Minggu dan Kolom Tinggi)",
+                    "Himpunan Pasangan Berurutan {(1,5), (2,10)...}",
+                    "Grafik pada Diagram Kartesius (Garis lurus miring)"
+                ]
+            },
+            {
+                type: "sort",
+                stimulus: "Untuk memahami Korespondensi Satu-Satu secara Islami, kita diajarkan tentang keseimbangan alam. Allah menciptakan makhluk saling berpasangan dengan proporsi yang adil. Sebuah perlombaan kaligrafi antar kelas di MTsN 1 Pohuwato mengharuskan panitia menyiapkan hadiah. Proses persiapan hingga pembagian hadiah ini harus mengikuti logika relasi yang adil di mana setiap juara hanya mendapat satu trofi spesifik, dan setiap trofi spesifik hanya untuk satu juara.",
+                q: "Urutkan syarat dan proses berjalannya Korespondensi Satu-Satu dari awal hingga akhir dengan logis!",
+                items: [
+                    "Pastikan jumlah siswa juara SAMA dengan jumlah trofi yang disediakan panitia",
+                    "Panggil satu persatu siswa yang menjadi juara ke depan panggung",
+                    "Serahkan tepat satu trofi untuk masing-masing siswa sesuai peringkatnya",
+                    "Pastikan tidak ada satupun siswa yang tidak dapat trofi, dan tidak ada trofi tersisa"
+                ]
+            },
+            {
+                type: "mcq",
+                stimulus: "Sebuah program santunan anak yatim (bentuk KBC Cinta Sesama Insan) mendata kebutuhan buku tulis. Rumus fungsi jumlah buku yang diberikan tergantung pada tingkat kelas anak tersebut. Dirumuskan dengan fungsi h(x) = 2x + 3, di mana x adalah tingkatan kelas anak di MTs (Kelas 7 = 1, Kelas 8 = 2, Kelas 9 = 3). Seorang anak yatim bernama Rasyid saat ini duduk di bangku kelas 8 bersama kalian.",
+                q: "Berapa buah buku tulis yang akan diterima Rasyid (Kelas 8, x = 2) sesuai dengan rumus fungsi h(x)?",
+                options: ["5 Buku Tulis", "7 Buku Tulis", "9 Buku Tulis"],
+                correct: 1
+            },
+            {
+                type: "mcq",
+                stimulus: "Perhatikan Ayat Al-Qur'an berikut: 'Dan Dialah yang menidurkan kamu di malam hari dan Dia mengetahui apa yang kamu kerjakan di siang hari...' (QS. Al-An'am: 60). Ayat ini menunjukkan relasi waktu dan aktivitas manusia. Secara matematika, waktu (jam) bisa diumpamakan sebagai Domain (sumbu X), dan aktivitas (tidur, sekolah, dll) sebagai Kodomain (sumbu Y). Di MTsN 1 Pohuwato, jam 07.15 hingga 13.00 didedikasikan sepenuhnya (dipetakan) pada aktivitas Belajar.",
+                q: "Jika kita menggambar grafik fungsi antara Waktu (Sumbu X) dan Aktivitas Belajar (Sumbu Y) dari pukul 07.15 hingga 13.00 yang nilainya konstan di satu tempat (Sekolah), bentuk grafiknya akan berupa:",
+                options: ["Garis lurus mendatar (Horizontal)", "Garis lurus tegak (Vertikal)", "Garis zig-zag naik turun drastis"],
+                correct: 0
+            }
+        ];
+
+        const berlatihData = [
+            {
+                level: 1, textLvl: "Level 1",
+                stimulus: "Sebagai seorang pelajar MTs di wilayah Pohuwato yang dekat dengan alam, Aisyah sangat peduli terhadap jenis tanaman lokal. Ia mendata relasi A = {Mangga, Cengkeh, Jagung} dan B = {Buah, Rempah, Sayur}. Ia memasangkan Mangga -> Buah, Cengkeh -> Rempah, dan Jagung -> Sayur. Relasi ini mengikuti aturan bahwa setiap tanaman HANYA memiliki tepat satu jenis kategori botani yang dominan.",
+                q: "Berdasarkan ciri-ciri pemetaannya, relasi yang dibuat Aisyah dalam kajian matematika disebut sebagai...",
+                options: ["A. Fungsi (Pemetaan) karena setiap tanaman dipasangkan tepat satu dengan kategori", "B. Bukan fungsi karena jumlah anggota himpunannya sama besar", "C. Relasi biasa karena ada tanaman yang tidak memiliki kategori", "D. Korespondensi terbalik karena bisa dibalik arahnya dengan bebas"],
+                correct: 0
+            },
+            {
+                level: 1, textLvl: "Level 1",
+                stimulus: "Untuk melestarikan lingkungan, MTsN 1 Pohuwato membentuk himpunan P yang berisi nama 5 jenis pohon perindang, dan himpunan Q yang berisi nama 5 lokasi taman di sekolah. Pak Guru Matematika meminta ketua OSIS untuk merancang pemetaan sedemikian rupa sehingga: 1) Setiap pohon ditanam di taman berbeda, 2) Setiap taman ditanami tepat satu pohon, 3) Tidak ada pohon maupun taman yang tersisa.",
+                q: "Pemetaan khusus dengan syarat ketat yang dirancang oleh ketua OSIS di atas dikenal dalam istilah matematika sebagai...",
+                options: ["A. Relasi Ganda", "B. Fungsi Kuadrat", "C. Korespondensi Satu-Satu", "D. Diagram Kartesius Khusus"],
+                correct: 2
+            },
+            {
+                level: 1, textLvl: "Level 1",
+                stimulus: "Diketahui sebuah relasi disajikan dalam himpunan pasangan berurutan sebagai berikut: R = {(Andi, Pohuwato), (Budi, Gorontalo), (Cici, Pohuwato), (Doni, Boalemo)}. Himpunan A adalah kumpulan nama orang (daerah asal), dan himpunan B adalah daerah tempat tinggal (daerah kawan).",
+                q: "Dari himpunan pasangan berurutan di atas, manakah yang merupakan Range (Daerah Hasil) dari relasi tersebut?",
+                options: ["A. {Andi, Budi, Cici, Doni}", "B. {Pohuwato, Gorontalo, Boalemo}", "C. {Andi, Pohuwato}", "D. {Pohuwato, Gorontalo, Cici}"],
+                correct: 1
+            },
+            {
+                level: 2, textLvl: "Level 2",
+                stimulus: "Kegiatan pertambangan rakyat di sekitar kecamatan Paguta wajib membayar retribusi atau pajak pemulihan lingkungan daerah. Rumus fungsi untuk menghitung besaran retribusi yang harus disetor oleh sebuah kelompok penambang setiap bulannya dirumuskan dengan f(x) = 250.000x + 50.000 (dalam satuan Rupiah), di mana x adalah jumlah mesin pompa air yang mereka operasikan di area tambang.",
+                q: "Jika kelompok penambang 'Maju Terus' mengoperasikan 4 buah mesin pompa air bulan ini, berapakah nilai retribusi (nilai fungsi f(4)) yang harus mereka setorkan secara jujur kepada pemerintah daerah?",
+                options: ["A. Rp 900.000", "B. Rp 950.000", "C. Rp 1.000.000", "D. Rp 1.050.000"],
+                correct: 3
+            },
+            {
+                level: 2, textLvl: "Level 2",
+                stimulus: "Sesuai dengan semangat Kurikulum Berbasis Cinta (KBC), siswa MTsN 1 Pohuwato mendata sumbangan alat tulis untuk panti asuhan. Himpunan K berisi nama penyumbang {Hasan, Fatimah}, sehingga n(K) = 2. Himpunan L berisi jenis barang {Buku, Pensil, Penghapus}, sehingga n(L) = 3. Mereka ingin mengetahui berapa banyak kemungkinan cara mendistribusikan (memetakan) bantuan dari himpunan penyumbang (K) kepada himpunan barang (L).",
+                q: "Dengan menggunakan rumus pemetaan himpunan, berapakah banyak semua kemungkinan pemetaan dari himpunan K ke himpunan L?",
+                options: ["A. 5 kemungkinan", "B. 6 kemungkinan", "C. 8 kemungkinan", "D. 9 kemungkinan"],
+                correct: 3
+            },
+            {
+                level: 2, textLvl: "Level 2",
+                stimulus: "Dalam suatu pemetaan (fungsi) dari himpunan X ke Y, didefinisikan sebuah aturan relasi \"Setengah dari\". Anggota himpunan X adalah {2, 3, 4, 5} dan himpunan Y adalah {4, 6, 8, 10, 12}. Fungsi ini memetakan nilai x dari himpunan X agar relasi \"Setengah dari\" menjadi benar secara matematis saat dipasangkan dengan nilai y di himpunan Y.",
+                q: "Jika relasi tersebut diubah ke dalam bentuk himpunan pasangan berurutan, manakah penulisan yang paling tepat menggambarkan relasi \"Setengah dari\"?",
+                options: ["A. {(2,1), (4,2), (6,3), (8,4)}", "B. {(2,4), (3,6), (4,8), (5,10)}", "C. {(4,2), (6,3), (8,4), (10,5)}", "D. {(2,4), (3,6), (4,8), (5,12)}"],
+                correct: 1
+            },
+            {
+                level: 2, textLvl: "Level 2",
+                stimulus: "Al-Qur'an Surah Al-Baqarah ayat 261 mengumpamakan orang yang menafkahkan hartanya di jalan Allah serupa dengan sebutir benih yang menumbuhkan tujuh bulir, dan tiap bulir berisi seratus biji. Fenomena pelipatgandaan ini sangat kental dengan konsep fungsi pertumbuhan matematis. Misalkan ada sebuah fungsi sedekah g(x) = 700x, di mana x adalah jumlah uang rupiah yang disedekahkan.",
+                q: "Jika seorang siswa MTs menyisihkan uang sakunya sebesar Rp 5.000 untuk disedekahkan (x = 5000), berapakah proyeksi pahala minimum g(5000) menurut rumus fungsi perumpamaan Al-Qur'an tersebut?",
+                options: ["A. 35.000 kebaikan", "B. 350.000 kebaikan", "C. 3.500.000 kebaikan", "D. 35.000.000 kebaikan"],
+                correct: 2
+            },
+            {
+                level: 3, textLvl: "Level 3 - HOTS",
+                stimulus: "Pemerintah Desa Paguta mengatur aliran irigasi dari sumber mata air pegunungan untuk perkebunan warga menggunakan pipa paralel bersistem katup (valve). Volume air yang dialirkan (dalam liter per detik) dimodelkan dengan fungsi kuadrat V(t) = -2t² + 12t, di mana t adalah waktu pembukaan katup dalam jam (0 ≤ t ≤ 6). Sistem irigasi ini harus ditutup ketika volume aliran mencapai titik terendah (habis) agar pipa tidak kemasukan udara tanah yang dapat merusak kelestarian sumber air (implementasi ekologi KBC).",
+                q: "Berdasarkan fungsi kuadrat volume air V(t) = -2t² + 12t, pada jam ke berapakah (t) aliran air irigasi akan kembali menjadi 0 liter per detik sehingga pengelola desa wajib menutup katup tersebut?",
+                options: ["A. Pada jam ke-3", "B. Pada jam ke-4", "C. Pada jam ke-5", "D. Pada jam ke-6"],
+                correct: 3
+            },
+            {
+                level: 3, textLvl: "Level 3 - HOTS",
+                stimulus: "Dua buah koperasi unit desa di Pohuwato membeli hasil kebun masyarakat. Koperasi A menggunakan fungsi harga beli f(x) = 40.000x + 100.000, sedangkan Koperasi B menggunakan fungsi g(x) = 45.000x + 50.000, di mana x adalah jumlah kuintal kopra (kelapa kering) yang dijual warga, dan f(x) atau g(x) adalah uang yang diterima warga. Seorang petani bernama Pak Mansur memiliki prinsip kesetaraan dan keadilan bermuamalah (berniaga) sesuai syariat Islam.",
+                q: "Untuk jumlah panen (x) berapakah, Pak Mansur akan mendapatkan bayaran uang yang sama persis (setara) entah ia menjualnya ke Koperasi A maupun ke Koperasi B?",
+                options: ["A. Saat panen 5 Kuintal", "B. Saat panen 10 Kuintal", "C. Saat panen 15 Kuintal", "D. Saat panen 20 Kuintal"],
+                correct: 1
+            },
+            {
+                level: 3, textLvl: "Level 3 - HOTS",
+                stimulus: "MTs Negeri 1 Pohuwato menganalisis hubungan antara lama waktu belajar malam siswa (x jam) dengan nilai asesmen literasi dan numerasi (y poin) mereka. Ditemukan sebuah relasi linear y = f(x) = 15x + 40. Guru mengingatkan pesan moderasi belajar Islami, \"berilah hak tubuhmu untuk istirahat\" (jangan belajar berlebihan semalaman). Kapasitas maksimal nilai asesmen adalah 100 poin sempurna.",
+                q: "Dengan menggunakan model pemetaan fungsi f(x) = 15x + 40, berapakah lama waktu belajar (x) yang direkomendasikan agar seorang siswa memperoleh nilai sempurna (100) tanpa memforsir fisiknya melebihi waktu tersebut?",
+                options: ["A. Tepat 3 Jam", "B. Tepat 4 Jam", "C. Tepat 5 Jam", "D. Tepat 6 Jam"],
+                correct: 1
+            }
+        ];
+
+        /* =========================================================================
+           STATE & CORE LOGIC
+           ========================================================================= */
+        const state = {
+            student: { name: "", class: "" },
+            progress: { belajar: 0, bermain: 0, berlatih: 0 },
+            unlocked: { bermain: false, berlatih: false },
+            scores: { 
+                bermain: { correct: 0, total: 10 }, 
+                berlatih: { total: 0, L1: 0, L2: 0, L3: 0 } 
+            },
+            answers: { berlatih: [] }
+        };
+
+        // Navigation
+        function nav(fromId, toId) {
+            playSound('transition');
+            document.getElementById(fromId).classList.add('hide');
+            document.getElementById(toId).classList.remove('hide');
+            window.scrollTo(0,0);
+        }
+
+        function showOverlay(id) {
+            playSound('click');
+            const overlay = document.getElementById(id);
+            const card = document.getElementById(id + '-card');
+            overlay.classList.remove('hide');
+            // Trigger animation frame for opacity/scale transition
+            requestAnimationFrame(() => {
+                overlay.classList.remove('opacity-0');
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            });
+        }
+
+        function hideOverlay(id) {
+            playSound('click');
+            const overlay = document.getElementById(id);
+            const card = document.getElementById(id + '-card');
+            overlay.classList.add('opacity-0');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            setTimeout(() => { overlay.classList.add('hide'); }, 300);
+        }
+
+        // Global Modal (Alert Replacement)
+        function showModal(title, desc, iconHTML = '<i class="fas fa-info-circle text-blue-500"></i>') {
+            playSound('click');
+            document.getElementById('modal-title').innerHTML = title;
+            document.getElementById('modal-desc').innerHTML = desc;
+            document.getElementById('modal-icon').innerHTML = iconHTML;
+            document.getElementById('global-modal').classList.remove('hide');
+        }
+        function hideModal() {
+            playSound('click');
+            document.getElementById('global-modal').classList.add('hide');
+        }
+
+        // Init App
+        window.onload = () => {
+            setTimeout(() => {
+                nav('screen-splash', 'screen-cover');
+            }, 2000);
+        };
+
+        // Login Logic
+        function submitLogin() {
+            playSound('click');
+            const name = document.getElementById('input-nama').value.trim();
+            const cls = document.getElementById('input-kelas').value;
+            
+            if(!name || !cls) {
+                showModal('Data Belum Lengkap', 'Silakan isi Nama Lengkap dan Kelasmu terlebih dahulu ya.', '<i class="fas fa-exclamation-triangle text-gold-500"></i>');
+                return;
+            }
+            
+            state.student.name = name;
+            state.student.class = cls;
+            
+            document.getElementById('display-name').innerText = name;
+            document.getElementById('dash-name').innerText = name;
+            document.getElementById('dash-class').innerText = cls;
+            
+            nav('screen-login', 'screen-guide');
+        }
+
+        // Guide Logic
+        let guideStep = 1;
+        function changeGuide(dir) {
+            playSound('click');
+            document.getElementById(`guide-slide-${guideStep}`).classList.add('hide');
+            document.getElementById(`dot-${guideStep}`).classList.replace('bg-kemenag-600', 'bg-gray-300');
+            
+            guideStep += dir;
+            
+            document.getElementById(`guide-slide-${guideStep}`).classList.remove('hide');
+            document.getElementById(`dot-${guideStep}`).classList.replace('bg-gray-300', 'bg-kemenag-600');
+            
+            document.getElementById('btn-guide-prev').classList.toggle('invisible', guideStep === 1);
+            
+            if(guideStep === 3) {
+                document.getElementById('btn-guide-next').classList.add('hide');
+                document.getElementById('btn-guide-finish').classList.remove('hide');
+            } else {
+                document.getElementById('btn-guide-next').classList.remove('hide');
+                document.getElementById('btn-guide-finish').classList.add('hide');
+            }
+        }
+        function finishGuide() {
+            nav('screen-guide', 'screen-dashboard');
+            updateDashboardUI();
+        }
+
+        // Dashboard Lock Logic
+        function updateDashboardUI() {
+            // Belajar
+            document.getElementById('prog-belajar').style.width = `${(state.progress.belajar / materiData.length) * 100}%`;
+            
+            // Bermain
+            if (state.unlocked.bermain) {
+                const cBermain = document.getElementById('card-bermain');
+                cBermain.classList.remove('opacity-75', 'grayscale', 'border-gray-300');
+                cBermain.classList.add('border-kemenag-500');
+                document.getElementById('icon-bg-bermain').classList.replace('bg-gray-200', 'bg-gold-100');
+                document.getElementById('icon-bermain').classList.replace('text-gray-500', 'text-gold-500');
+                document.getElementById('status-bermain').innerHTML = '<i class="fas fa-unlock-alt mr-2"></i> TERBUKA';
+                document.getElementById('status-bermain').classList.replace('text-red-500', 'text-kemenag-600');
+                document.getElementById('prog-bermain-container').classList.remove('hide');
+                document.getElementById('prog-bermain').style.width = `${(state.progress.bermain / bermainData.length) * 100}%`;
+            }
+
+            // Berlatih
+            if (state.unlocked.berlatih) {
+                const cBerlatih = document.getElementById('card-berlatih');
+                cBerlatih.classList.remove('opacity-75', 'grayscale', 'border-gray-300');
+                cBerlatih.classList.add('border-kemenag-500');
+                document.getElementById('icon-bg-berlatih').classList.replace('bg-gray-200', 'bg-blue-100');
+                document.getElementById('icon-berlatih').classList.replace('text-gray-500', 'text-blue-500');
+                document.getElementById('status-berlatih').innerHTML = '<i class="fas fa-unlock-alt mr-2"></i> TERBUKA';
+                document.getElementById('status-berlatih').classList.replace('text-red-500', 'text-kemenag-600');
+            }
+        }
+
+        function checkLock(menu) {
+            playSound('click');
+            if (menu === 'bermain' && !state.unlocked.bermain) {
+                showModal('Menu Terkunci 🔒', 'Kamu harus menyelesaikan seluruh 8 Slide Materi di menu <b>BELAJAR</b> terlebih dahulu agar kunci Bermain terbuka.', '<i class="fas fa-lock text-red-500"></i>');
+                return;
+            }
+            if (menu === 'berlatih' && !state.unlocked.berlatih) {
+                showModal('Menu Terkunci 🔒', 'Selesaikan 10 Tantangan di menu <b>BERMAIN</b> terlebih dahulu agar kunci Evaluasi ini terbuka.', '<i class="fas fa-lock text-red-500"></i>');
+                return;
+            }
+            if (menu === 'bermain') startBermain();
+            if (menu === 'berlatih') startBerlatih();
+        }
+
+        function confirmExit(moduleName) {
+            nav(`screen-${moduleName}`, 'screen-dashboard');
+            updateDashboardUI();
+        }
+
+        /* =========================================================================
+           BELAJAR (MATERI) LOGIC
+           ========================================================================= */
+        let currentMateri = 0;
+        let materiQuizAnswered = false;
+
+        function startBelajar() {
+            playSound('click');
+            currentMateri = state.progress.belajar < materiData.length ? state.progress.belajar : 0;
+            renderMateri();
+            nav('screen-dashboard', 'screen-belajar');
+        }
+
+        function renderMateri() {
+            const data = materiData[currentMateri];
+            document.getElementById('materi-indicator').innerText = `${currentMateri + 1}/${materiData.length}`;
+            
+            // Content injection
+            let html = `<h2 class="text-2xl font-black text-kemenag-900 mb-6 border-b pb-2">${data.title}</h2>`;
+            html += data.content;
+            document.getElementById('materi-content-container').innerHTML = html;
+
+            // Quiz injection
+            document.getElementById('materi-quiz-q').innerText = data.quiz.q;
+            const optionsContainer = document.getElementById('materi-quiz-options');
+            optionsContainer.innerHTML = '';
+            
+            // Reset Quiz State
+            materiQuizAnswered = false;
+            document.getElementById('materi-quiz-feedback').classList.add('hidden');
+            const btnNext = document.getElementById('btn-materi-next');
+            btnNext.classList.add('opacity-50', 'cursor-not-allowed');
+            btnNext.innerText = "Jawab Aktivitas Dulu";
+
+            data.quiz.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-blue-50 transition text-sm text-gray-700";
+                btn.innerText = opt;
+                btn.onclick = () => checkMateriQuiz(idx, btn, data.quiz.correct);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Prev Button
+            document.getElementById('btn-materi-prev').disabled = (currentMateri === 0);
+
+            // Scroll to top
+            document.getElementById('materi-scroll-area').scrollTo(0,0);
+        }
+
+        function checkMateriQuiz(selectedIndex, btnElement, correctIndex) {
+            if (materiQuizAnswered) return;
+            materiQuizAnswered = true;
+
+            const feedback = document.getElementById('materi-quiz-feedback');
+            feedback.classList.remove('hidden');
+
+            const allBtns = document.getElementById('materi-quiz-options').children;
+            for(let i=0; i<allBtns.length; i++) {
+                allBtns[i].onclick = null; // disable clicks
+                if(i === correctIndex) {
+                    allBtns[i].classList.replace('border-gray-300', 'border-kemenag-500');
+                    allBtns[i].classList.replace('bg-white', 'bg-kemenag-50');
+                    allBtns[i].innerHTML += ' <i class="fas fa-check text-kemenag-600 ml-2"></i>';
+                }
+            }
+
+            if (selectedIndex === correctIndex) {
+                playSound('correct');
+                feedback.innerText = "Luar Biasa! Jawabanmu Tepat.";
+                feedback.className = "mt-3 text-sm font-bold text-kemenag-600 block";
+            } else {
+                playSound('wrong');
+                btnElement.classList.replace('border-gray-300', 'border-red-400');
+                btnElement.classList.replace('bg-white', 'bg-red-50');
+                feedback.innerText = "Jawaban kurang tepat. Perhatikan jawaban yang benar bercentang hijau. Yuk lanjut!";
+                feedback.className = "mt-3 text-sm font-bold text-red-500 block";
+            }
+
+            // Unlock Next
+            const btnNext = document.getElementById('btn-materi-next');
+            btnNext.classList.remove('opacity-50', 'cursor-not-allowed');
+            if (currentMateri === materiData.length - 1) {
+                btnNext.innerText = "Selesai Belajar";
+                btnNext.classList.replace('bg-kemenag-600', 'bg-gold-500');
+                btnNext.classList.replace('hover:bg-kemenag-700', 'hover:bg-gold-600');
+                btnNext.classList.add('btn-glow');
+            } else {
+                btnNext.innerText = "Selanjutnya";
+            }
+
+            // Update Progress
+            if(state.progress.belajar === currentMateri) {
+                state.progress.belajar++;
+            }
+        }
+
+        function changeMateri(dir) {
+            playSound('click');
+            if (dir === 1 && !materiQuizAnswered) {
+                showModal('Belum Selesai', 'Selesaikan aktivitas pemahaman (kuis) di bawah materi terlebih dahulu untuk lanjut.', '<i class="fas fa-exclamation-circle text-gold-500"></i>');
+                return;
+            }
+
+            if (dir === 1 && currentMateri === materiData.length - 1) {
+                // Finish Belajar
+                state.unlocked.bermain = true;
+                showModal('Alhamdulillah!', 'Kamu telah menyelesaikan semua materi Belajar. Kunci menu <b>BERMAIN</b> kini Terbuka! Lanjutkan semangatmu.', '<i class="fas fa-unlock text-gold-500 text-5xl mb-4"></i>');
+                nav('screen-belajar', 'screen-dashboard');
+                updateDashboardUI();
+                return;
+            }
+
+            currentMateri += dir;
+            renderMateri();
+        }
+
+        /* =========================================================================
+           BERMAIN (GAMIFIKASI) LOGIC
+           ========================================================================= */
+        let currentBermain = 0;
+        let bermainState = {}; // Temp state for current challenge
+
+        function startBermain() {
+            playSound('click');
+            currentBermain = state.progress.bermain < bermainData.length ? state.progress.bermain : 0;
+            // If already finished, start from beginning for review
+            if (currentBermain >= bermainData.length) currentBermain = 0; 
+            renderBermain();
+            nav('screen-dashboard', 'screen-bermain');
+        }
+
+        function renderBermain() {
+            const data = bermainData[currentBermain];
+            document.getElementById('bermain-indicator').innerText = `${currentBermain + 1}/${bermainData.length}`;
+            document.getElementById('bermain-progress-bar').style.width = `${((currentBermain) / bermainData.length) * 100}%`;
+            
+            document.getElementById('bermain-stimulus').innerHTML = `<strong>Konteks:</strong> ${data.stimulus}`;
+            document.getElementById('bermain-question-text').innerText = data.q;
+            
+            const container = document.getElementById('bermain-mechanic-container');
+            container.innerHTML = '';
+            bermainState = { answered: false }; // reset state
+
+            if (data.type === 'mcq') {
+                renderBermainMCQ(data, container);
+            } else if (data.type === 'multi') {
+                renderBermainMulti(data, container);
+            } else if (data.type === 'match') {
+                renderBermainMatch(data, container);
+            } else if (data.type === 'sort') {
+                renderBermainSort(data, container);
+            }
+        }
+
+        function renderBermainMCQ(data, container) {
+            data.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 mb-3 rounded-xl border-2 border-gray-200 bg-white hover:border-gold-400 transition font-medium shadow-sm";
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if (bermainState.answered) return;
+                    bermainState.answered = true;
+                    
+                    if (idx === data.correct) {
+                        playSound('correct');
+                        btn.classList.add('bg-kemenag-100', 'border-kemenag-500', 'text-kemenag-800');
+                        btn.innerHTML += '<i class="fas fa-check-circle float-right text-xl mt-1 text-kemenag-600"></i>';
+                        state.scores.bermain.correct++;
+                    } else {
+                        playSound('wrong');
+                        btn.classList.add('bg-red-50', 'border-red-400', 'text-red-700');
+                        btn.innerHTML += '<i class="fas fa-times-circle float-right text-xl mt-1 text-red-500"></i>';
+                    }
+                    showBermainNextBtn(container);
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderBermainMulti(data, container) {
+            bermainState.selected = [];
+            const hint = document.createElement('p');
+            hint.className = "text-xs text-gold-600 mb-3 italic";
+            hint.innerText = "*Pilih 2 jawaban yang menurutmu benar, lalu klik Cek Jawaban.";
+            container.appendChild(hint);
+
+            data.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 mb-2 rounded-lg border-2 border-gray-200 bg-white transition font-medium multi-btn flex items-center";
+                btn.innerHTML = `<div class="w-5 h-5 rounded border border-gray-400 mr-3 flex-shrink-0 flex items-center justify-center check-box"></div> <span>${opt}</span>`;
+                btn.onclick = () => {
+                    if (bermainState.answered) return;
+                    playSound('click');
+                    const cbox = btn.querySelector('.check-box');
+                    if (bermainState.selected.includes(idx)) {
+                        bermainState.selected = bermainState.selected.filter(i => i !== idx);
+                        btn.classList.remove('border-gold-500', 'bg-gold-50');
+                        cbox.innerHTML = ''; cbox.classList.remove('bg-gold-500', 'border-gold-500');
+                    } else {
+                        if (bermainState.selected.length >= 2) return; // limit to 2
+                        bermainState.selected.push(idx);
+                        btn.classList.add('border-gold-500', 'bg-gold-50');
+                        cbox.innerHTML = '<i class="fas fa-check text-white text-xs"></i>'; cbox.classList.add('bg-gold-500', 'border-gold-500');
+                    }
+                };
+                container.appendChild(btn);
+            });
+
+            const submitBtn = document.createElement('button');
+            submitBtn.className = "mt-4 px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow w-full";
+            submitBtn.innerText = "Cek Jawaban";
+            submitBtn.onclick = () => {
+                if(bermainState.selected.length !== 2) {
+                    showModal('Pilih 2', 'Kamu harus memilih tepat 2 pernyataan sebelum mengecek.', '<i class="fas fa-hand-pointer text-blue-500"></i>');
+                    return;
+                }
+                bermainState.answered = true;
+                submitBtn.classList.add('hide');
+                
+                let isCorrect = true;
+                bermainState.selected.forEach(s => {
+                    if(!data.correct.includes(s)) isCorrect = false;
+                });
+                
+                if (isCorrect) {
+                    state.scores.bermain.correct++;
+                    playSound('correct');
+                } else {
+                    playSound('wrong');
+                }
+                showBermainNextBtn(container, isCorrect ? 'Benar!' : 'Kurang Tepat, lanjutkan perjuangan!');
+            };
+            container.appendChild(submitBtn);
+        }
+
+        // Tap-to-Match logic (Robust mobile alternative to DragDrop)
+        function renderBermainMatch(data, container) {
+            bermainState.matches = 0;
+            bermainState.activeLeft = null;
+            
+            // Shuffle arrays for display
+            const leftArr = data.pairs.map((p,i) => ({id: i, txt: p.left})).sort(()=>Math.random()-0.5);
+            const rightArr = data.pairs.map((p,i) => ({id: i, txt: p.right})).sort(()=>Math.random()-0.5);
+
+            const grid = document.createElement('div');
+            grid.className = "flex justify-between gap-4";
+            
+            const colL = document.createElement('div'); colL.className = "w-1/2 flex flex-col gap-3";
+            const colR = document.createElement('div'); colR.className = "w-1/2 flex flex-col gap-3";
+            
+            leftArr.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = "match-btn p-3 text-sm font-semibold rounded-lg border-2 border-gray-300 text-center transition bg-white shadow-sm";
+                btn.innerText = item.txt;
+                btn.onclick = () => {
+                    if (btn.classList.contains('matched')) return;
+                    playSound('click');
+                    // reset others
+                    colL.childNodes.forEach(b => { if(!b.classList.contains('matched')) b.classList.remove('selected', 'bg-yellow-100', 'border-yellow-400') });
+                    btn.classList.add('selected', 'bg-yellow-100', 'border-yellow-400');
+                    bermainState.activeLeft = item.id;
+                    bermainState.leftBtn = btn;
+                };
+                colL.appendChild(btn);
+            });
+
+            rightArr.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = "match-btn p-3 text-sm font-semibold rounded-lg border-2 border-gray-300 text-center transition bg-gray-50 shadow-sm";
+                btn.innerText = item.txt;
+                btn.onclick = () => {
+                    if (btn.classList.contains('matched')) return;
+                    if (bermainState.activeLeft === null) {
+                        showModal('Pilih Kiri Dulu', 'Klik/Tap kotak di sebelah KIRI terlebih dahulu, lalu cari pasangannya di KANAN.', '<i class="fas fa-hand-point-left text-gold-500"></i>');
+                        return;
+                    }
+                    if (bermainState.activeLeft === item.id) {
+                        playSound('correct');
+                        // Match!
+                        btn.classList.add('matched', 'bg-green-100', 'border-green-500', 'text-green-800');
+                        bermainState.leftBtn.classList.add('matched', 'bg-green-100', 'border-green-500', 'text-green-800');
+                        bermainState.leftBtn.classList.remove('selected', 'bg-yellow-100', 'border-yellow-400');
+                        bermainState.activeLeft = null;
+                        bermainState.matches++;
+                        
+                        if(bermainState.matches === data.pairs.length) {
+                            state.scores.bermain.correct++;
+                            showBermainNextBtn(container, 'Semua Pasangan Tepat!');
+                        }
+                    } else {
+                        playSound('wrong');
+                        // Wrong Match
+                        btn.classList.add('bg-red-100', 'border-red-500', 'text-red-700');
+                        setTimeout(() => btn.classList.remove('bg-red-100', 'border-red-500', 'text-red-700'), 800);
+                    }
+                };
+                colR.appendChild(btn);
+            });
+
+            grid.appendChild(colL);
+            grid.appendChild(colR);
+            container.appendChild(grid);
+        }
+
+        // Tap-to-Sort logic
+        function renderBermainSort(data, container) {
+            let currentOrder = [...data.items].sort(()=>Math.random()-0.5);
+            
+            const listDiv = document.createElement('div');
+            listDiv.className = "flex flex-col gap-2";
+
+            const renderList = () => {
+                listDiv.innerHTML = '';
+                currentOrder.forEach((item, index) => {
+                    const row = document.createElement('div');
+                    row.className = "flex items-center bg-white border border-gray-300 rounded-lg p-3 shadow-sm";
+                    
+                    const controls = document.createElement('div');
+                    controls.className = "flex flex-col gap-1 mr-4 bg-gray-100 rounded px-1";
+                    
+                    const btnUp = document.createElement('button');
+                    btnUp.innerHTML = '<i class="fas fa-caret-up text-gray-600"></i>';
+                    btnUp.disabled = (index === 0) || bermainState.answered;
+                    btnUp.className = btnUp.disabled ? "opacity-30" : "hover:text-blue-500";
+                    btnUp.onclick = () => {
+                        playSound('click');
+                        [currentOrder[index-1], currentOrder[index]] = [currentOrder[index], currentOrder[index-1]];
+                        renderList();
+                    };
+                    
+                    const btnDown = document.createElement('button');
+                    btnDown.innerHTML = '<i class="fas fa-caret-down text-gray-600"></i>';
+                    btnDown.disabled = (index === currentOrder.length - 1) || bermainState.answered;
+                    btnDown.className = btnDown.disabled ? "opacity-30" : "hover:text-blue-500";
+                    btnDown.onclick = () => {
+                        playSound('click');
+                        [currentOrder[index+1], currentOrder[index]] = [currentOrder[index], currentOrder[index+1]];
+                        renderList();
+                    };
+                    
+                    controls.appendChild(btnUp);
+                    controls.appendChild(btnDown);
+                    
+                    const txt = document.createElement('span');
+                    txt.className = "text-sm font-medium text-gray-700";
+                    txt.innerText = item;
+
+                    row.appendChild(controls);
+                    row.appendChild(txt);
+                    listDiv.appendChild(row);
+                });
+            };
+            
+            renderList();
+            container.appendChild(listDiv);
+
+            const submitBtn = document.createElement('button');
+            submitBtn.className = "mt-5 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow w-full transition";
+            submitBtn.innerText = "Kunci Urutan";
+            submitBtn.onclick = () => {
+                bermainState.answered = true;
+                submitBtn.classList.add('hide');
+                
+                let isCorrect = true;
+                currentOrder.forEach((item, idx) => {
+                    if (item !== data.items[idx]) isCorrect = false;
+                });
+                
+                if (isCorrect) {
+                    state.scores.bermain.correct++;
+                    playSound('correct');
+                } else {
+                    playSound('wrong');
+                }
+                renderList(); // re-render to disable buttons
+                showBermainNextBtn(container, isCorrect ? 'Urutan Sempurna!' : 'Cek lagi urutan yang benar di materi ya.');
+            };
+            container.appendChild(submitBtn);
+        }
+
+        function showBermainNextBtn(container, feedbackText = null) {
+            if(feedbackText) {
+                const fb = document.createElement('p');
+                fb.className = "mt-4 text-center font-bold text-kemenag-700";
+                fb.innerText = feedbackText;
+                container.appendChild(fb);
+            }
+
+            const btn = document.createElement('button');
+            btn.className = "mt-6 w-full py-4 bg-kemenag-600 text-white rounded-xl font-bold shadow-lg text-lg hover:bg-kemenag-700 btn-glow transition";
+            
+            if (currentBermain === bermainData.length - 1) {
+                btn.innerText = "Lihat Hasil Bermain";
+                btn.onclick = finishBermain;
+            } else {
+                btn.innerText = "Lanjut Tantangan Berikutnya ➔";
+                btn.onclick = () => {
+                    currentBermain++;
+                    if(state.progress.bermain < currentBermain) state.progress.bermain = currentBermain;
+                    renderBermain();
+                };
+            }
+            container.appendChild(btn);
+        }
+
+        function finishBermain() {
+            state.progress.bermain = bermainData.length;
+            state.unlocked.berlatih = true;
+            
+            const score = (state.scores.bermain.correct / 10) * 100;
+            let msg = `Kamu berhasil menyelesaikan 10 Tantangan Bermain dengan skor ${score}.<br><br>`;
+            msg += "Kunci menu <b>BERLATIH</b> telah terbuka. Siapkan dirimu untuk Asesmen formal!";
+            
+            showModal('Tantangan Selesai 🏆', msg, '<i class="fas fa-trophy text-gold-500 text-5xl mb-4"></i>');
+            nav('screen-bermain', 'screen-dashboard');
+            updateDashboardUI();
+        }
+
+        /* =========================================================================
+           BERLATIH (ASESMEN) LOGIC WITH GOOGLE APPS SCRIPT INTEGRATION
+           ========================================================================= */
+        let currentBerlatih = 0;
+
+        function startBerlatih() {
+            playSound('click');
+            // Init answers array if empty
+            if(state.answers.berlatih.length === 0) {
+                state.answers.berlatih = new Array(10).fill(null);
+            }
+            currentBerlatih = 0;
+            renderBerlatih();
+            nav('screen-dashboard', 'screen-berlatih');
+        }
+
+        function renderBerlatih() {
+            const data = berlatihData[currentBerlatih];
+            
+            document.getElementById('berlatih-indicator').innerText = `${currentBerlatih + 1}/${berlatihData.length}`;
+            
+            const badge = document.getElementById('berlatih-level-badge');
+            badge.innerText = data.textLvl;
+            badge.className = `ml-2 text-xs px-2 py-1 rounded font-bold ${data.level === 3 ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-kemenag-100 text-kemenag-700 border border-kemenag-200'}`;
+            
+            document.getElementById('berlatih-stimulus').innerHTML = data.stimulus;
+            document.getElementById('berlatih-q-text').innerText = data.q;
+            
+            const optsContainer = document.getElementById('berlatih-options');
+            optsContainer.innerHTML = '';
+            
+            data.options.forEach((opt, idx) => {
+                const isSelected = state.answers.berlatih[currentBerlatih] === idx;
+                
+                const label = document.createElement('label');
+                label.className = `flex items-start p-4 rounded-xl border-2 cursor-pointer transition ${isSelected ? 'border-kemenag-500 bg-kemenag-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`;
+                
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'berlatih_q';
+                radio.className = "mt-1 mr-3 w-4 h-4 text-kemenag-600 focus:ring-kemenag-500";
+                radio.checked = isSelected;
+                radio.onchange = () => {
+                    playSound('click');
+                    state.answers.berlatih[currentBerlatih] = idx;
+                    renderBerlatih(); // re-render to update selected styles
+                };
+                
+                const span = document.createElement('span');
+                span.className = `font-medium ${isSelected ? 'text-kemenag-800 font-bold' : 'text-gray-700'}`;
+                span.innerText = opt;
+                
+                label.appendChild(radio);
+                label.appendChild(span);
+                optsContainer.appendChild(label);
+            });
+
+            // Footer Nav Control
+            document.getElementById('btn-berlatih-prev').classList.toggle('hidden', currentBerlatih === 0);
+            
+            const btnNext = document.getElementById('btn-berlatih-next');
+            const btnSub = document.getElementById('btn-berlatih-submit');
+            
+            if (currentBerlatih === berlatihData.length - 1) {
+                btnNext.classList.add('hidden');
+                btnSub.classList.remove('hidden');
+            } else {
+                btnNext.classList.remove('hidden');
+                btnSub.classList.add('hidden');
+            }
+        }
+
+        function navBerlatih(dir) {
+            playSound('click');
+            currentBerlatih += dir;
+            renderBerlatih();
+        }
+
+        function submitBerlatih() {
+            playSound('click');
+            // Check if all answered
+            const unanswered = state.answers.berlatih.findIndex(a => a === null);
+            if(unanswered !== -1) {
+                showModal('Belum Lengkap', `Kamu belum menjawab Soal nomor ${unanswered + 1}. Silakan kembali dan lengkapi ya!`, '<i class="fas fa-exclamation-triangle text-red-500"></i>');
+                return;
+            }
+
+            // Calculate Scores
+            let totalScore = 0;
+            let L1Score = 0; let L1Max = 24; // 3 * 8
+            let L2Score = 0; let L2Max = 40; // 4 * 10
+            let L3Score = 0; let L3Max = 36; // 3 * 12
+            let benar = 0;
+            let detailJawaban = [];
+
+            berlatihData.forEach((q, i) => {
+                const studentAnsIdx = state.answers.berlatih[i];
+                const isCorrect = (studentAnsIdx === q.correct);
+                
+                // Format jawaban ke A,B,C,D
+                const optLetter = ["A", "B", "C", "D"][studentAnsIdx] || studentAnsIdx;
+                const correctLetter = ["A", "B", "C", "D"][q.correct] || q.correct;
+                detailJawaban.push(`${optLetter} (${isCorrect ? 'Benar' : 'Salah - Kunci: ' + correctLetter})`);
+
+                if (isCorrect) {
+                    benar++;
+                    if (q.level === 1) { L1Score += 8; totalScore += 8; }
+                    else if (q.level === 2) { L2Score += 10; totalScore += 10; }
+                    else if (q.level === 3) { L3Score += 12; totalScore += 12; }
+                }
+            });
+
+            const salah = 10 - benar;
+            state.scores.berlatih = { total: totalScore, L1: L1Score, L2: L2Score, L3: L3Score };
+            
+            // PREPARE PAYLOAD FOR GAS
+            const payload = {
+                nama: state.student.name,
+                kelas: state.student.class,
+                skorBermain: (state.scores.bermain.correct / 10) * 100,
+                skorBerlatih: totalScore,
+                benar: benar,
+                salah: salah,
+                detailJawaban: detailJawaban,
+                // Kirim data soal agar GAS bisa merekam ke sheet "Data Soal"
+                soalBermain: bermainData.map(d => ({
+                    stimulus: d.stimulus,
+                    q: d.q,
+                    options: (d.options || []).join(" | "),
+                    correct: Array.isArray(d.correct) ? d.correct.join(",") : d.correct
+                })),
+                soalBerlatih: berlatihData.map(d => ({
+                    level: d.textLvl,
+                    stimulus: d.stimulus,
+                    q: d.q,
+                    options: (d.options || []).join(" | "),
+                    correct: ["A", "B", "C", "D"][d.correct] || d.correct
+                }))
+            };
+
+            // Loading state
+            showModal('Menyimpan Data...', 'Mohon tunggu sebentar, data belajarmu sedang dikirim ke server Ibu Guru.', '<i class="fas fa-spinner fa-spin text-kemenag-500 text-4xl"></i>');
+            document.getElementById('modal-btn').classList.add('hide');
+
+            if(GAS_URL === "URL_GAS_ANDA_DISINI" || GAS_URL === "") {
+                // Lewati jika GAS URL belum diisi
+                finishSubmit(L1Max, L2Max, L3Max);
+            } else {
+                fetch(GAS_URL, {
+                    method: "POST",
+                    mode: "no-cors", // Menggunakan no-cors menghindari preflight block dari browser ke GAS
+                    body: JSON.stringify(payload),
+                    headers: {
+                        "Content-Type": "text/plain" // Plain text penting untuk mode no-cors JSON transfer
+                    }
+                })
+                .then(() => {
+                    finishSubmit(L1Max, L2Max, L3Max);
+                })
+                .catch(err => {
+                    console.error("Gagal mengirim data:", err);
+                    finishSubmit(L1Max, L2Max, L3Max); // Tetap lanjut ke halaman laporan meskipun gagal
+                });
+            }
+        }
+
+        function finishSubmit(L1Max, L2Max, L3Max) {
+            document.getElementById('modal-btn').classList.remove('hide');
+            hideModal();
+            prepareReport(L1Max, L2Max, L3Max);
+            nav('screen-berlatih', 'screen-report');
+        }
+
+        /* =========================================================================
+           REPORT (PDF) LOGIC
+           ========================================================================= */
+        function prepareReport(L1Max, L2Max, L3Max) {
+            const sc = state.scores.berlatih;
+            const gm = state.scores.bermain;
+            
+            // Text data
+            document.getElementById('rep-name').innerText = state.student.name;
+            document.getElementById('rep-class').innerText = state.student.class;
+            
+            const date = new Date();
+            const dateStr = `${date.getDate()} ${['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][date.getMonth()]} ${date.getFullYear()}`;
+            document.getElementById('rep-date').innerText = dateStr;
+            document.getElementById('rep-ttd-date').innerText = dateStr;
+
+            // Scores
+            document.getElementById('rep-score-bermain').innerText = `${(gm.correct/10)*100}/100`;
+            document.getElementById('rep-score-berlatih').innerText = sc.total;
+            
+            // Predikat
+            let pred = "Sangat Baik (Mumtaz)";
+            if (sc.total < 75) pred = "Cukup (Jayyid)";
+            if (sc.total < 60) pred = "Perlu Bimbingan";
+            document.getElementById('rep-predikat').innerText = pred;
+
+            // Level Breakdowns
+            document.getElementById('rep-l1-score').innerText = `${sc.L1} / ${L1Max}`;
+            document.getElementById('rep-l2-score').innerText = `${sc.L2} / ${L2Max}`;
+            document.getElementById('rep-l3-score').innerText = `${sc.L3} / ${L3Max}`;
+
+            const genDesc = (score, max) => score === max ? "Tuntas Sempurna" : (score >= max/2 ? "Tuntas Sebagian" : "Belum Tuntas");
+            document.getElementById('rep-l1-desc').innerText = genDesc(sc.L1, L1Max);
+            document.getElementById('rep-l2-desc').innerText = genDesc(sc.L2, L2Max);
+            document.getElementById('rep-l3-desc').innerText = genDesc(sc.L3, L3Max);
+
+            // Recommendation string
+            let rec = `Ananda ${state.student.name} telah menunjukkan minat belajar yang baik. `;
+            if (sc.L3 < L3Max/2) {
+                rec += "Disarankan untuk lebih banyak berlatih soal-soal penalaran (HOTS) terkait aplikasi fungsi dalam kehidupan sehari-hari.";
+            } else {
+                rec += "Kemampuan bernalar tingkat tingginya sudah sangat baik. Pertahankan dan aplikasikan dalam memecahkan masalah lingkungan sekitar!";
+            }
+            document.getElementById('rep-rekomendasi').innerText = rec;
+        }
+
+        function generatePDF() {
+            const element = document.getElementById('pdf-content');
+            
+            // Make adjustments for PDF layout
+            element.classList.remove('shadow-2xl');
+            
+            const opt = {
+                margin:       10,
+                filename:     `Laporan_Matematika_${state.student.name.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Using promise to add class back after generation
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.classList.add('shadow-2xl');
+            });
+        }
+    </script>
+</body>
+</html>
